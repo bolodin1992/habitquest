@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+<script>
+// Erzwingt bei jedem echten Neu-Start der Home-Bildschirm-App einen frischen
+// Abruf vom Server, statt einer evtl. veralteten, zwischengespeicherten Version.
+(function(){
+  try{
+    if(!sessionStorage.getItem('hq_booted')){
+      sessionStorage.setItem('hq_booted','1');
+      var u = new URL(location.href);
+      u.searchParams.set('v', Date.now());
+      location.replace(u.toString());
+    }
+  }catch(e){}
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
 <title>HabitQuest — Dein Gewohnheiten-Questlog</title>
