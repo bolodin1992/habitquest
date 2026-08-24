@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>HabitQuest — Dein Gewohnheiten-Questlog</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<meta name="theme-color" content="#0b1224">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HabitQuest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1224; --bg-soft:#0f1830;
+  --card:#131d3a; --card2:#182444; --card3:#1d2c52;
+  --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+  --text:#eef1fb; --muted:#93a1c4; --muted2:#5f6f95;
+  --blue:#3b7cf6; --blue-soft:rgba(59,124,246,.16); --blue-line:rgba(59,124,246,.4);
+  --purple:#8b7cf6; --purple-soft:rgba(139,124,246,.16);
+  --teal:#34c6c6; --teal-soft:rgba(52,198,198,.16);
+  --gold:#f4b740; --gold-soft:rgba(244,183,64,.16);
+  --green:#33c17a; --green-soft:rgba(51,193,122,.16);
+  --red:#f0554f; --red-soft:rgba(240,85,79,.16);
+  --radius:18px; --radius-sm:12px;
+  --font-display:'Space Grotesk',Inter,sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer}
+::selection{background:var(--blue-soft)}
+
+/* ---------- layout ---------- */
+.app{max-width:880px;margin:0 auto;padding:0 16px calc(90px + env(safe-area-inset-bottom))}
+.top{position:sticky;top:0;z-index:20;background:rgba(11,18,36,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.topinner{max-width:880px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:9px}
+.brand .mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--blue),#6ea3ff);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 3px 12px rgba(59,124,246,.35)}
+.brand span{font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:.2px}
+.levelbadge{display:flex;align-items:center;gap:10px;cursor:pointer;border:none;background:none;color:inherit;padding:4px;border-radius:99px}
+.levelbadge:hover{background:var(--card)}
+.ring-wrap{position:relative;width:44px;height:44px;flex:none}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:14px}
+.xpmeta{text-align:right;line-height:1.25}
+.xpmeta .xp{font-family:var(--font-mono);font-weight:700;font-size:14px}
+.xpmeta .sub{font-size:11px;color:var(--muted)}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid var(--line);background:var(--card);color:var(--muted);padding:9px 15px;border-radius:99px;font-weight:600;font-size:13.5px;transition:.15s}
+.tab.active{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 3px 12px rgba(59,124,246,.3)}
+.tab:not(.active):hover{color:var(--text);border-color:var(--line-strong)}
+
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin:22px 0 10px}
+.section-title h2{font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.section-title .hint{font-size:12px;color:var(--muted2)}
+
+/* ---------- generic card ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+
+/* ---------- hero / dashboard header ---------- */
+.hero{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:20px;padding:20px;margin-top:16px;position:relative;overflow:hidden}
+.hero:before{content:"";position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(59,124,246,.25),transparent 70%)}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;position:relative}
+.hero-date{color:var(--muted);font-size:13px;font-weight:600;text-transform:capitalize}
+.hero-level{font-family:var(--font-display);font-size:28px;font-weight:700;margin-top:2px}
+.hero-ring{width:86px;height:86px;position:relative;flex:none}
+.hero-ring svg{transform:rotate(-90deg)}
+.hero-ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.hero-ring .num b{font-family:var(--font-display);font-size:22px;line-height:1}
+.hero-ring .num small{font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.hero-bar{margin-top:14px}
+.hero-bar .row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px}
+.hero-bar .row b{color:var(--text);font-family:var(--font-mono)}
+.track{height:10px;background:var(--bg);border:1px solid var(--line);border-radius:99px;overflow:hidden}
+.fill{height:100%;border-radius:99px;transition:width .4s ease}
+.fill.blue{background:linear-gradient(90deg,var(--blue),#6ea3ff)}
+.fill.gold{background:linear-gradient(90deg,var(--gold),#ffd684)}
+.fill.green{background:linear-gradient(90deg,var(--green),#6be3a8)}
+.streakrow{display:flex;gap:16px;margin-top:14px;position:relative}
+.streakitem{flex:1;background:var(--bg-soft);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.streakitem .n{font-family:var(--font-mono);font-weight:700;font-size:18px}
+.streakitem .l{font-size:11px;color:var(--muted)}
+
+/* ---------- quest cards ---------- */
+.quest{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+.quest .icon{width:38px;height:38px;border-radius:10px;background:var(--cs);display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+.quest .body{flex:1;min-width:0}
+.quest .title{font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:7px}
+.quest .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.quest .sub b{color:var(--text);font-family:var(--font-mono)}
+.quest .actions{display:flex;align-items:center;gap:8px;flex:none}
+.linkbtn{border:1px solid var(--line);background:var(--card2);color:var(--muted);border-radius:9px;padding:7px 10px;font-size:12px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.linkbtn:hover{color:var(--text);border-color:var(--line-strong)}
+.toggle{border:1.5px solid var(--line-strong);background:transparent;color:var(--muted);border-radius:10px;padding:8px 14px;font-weight:700;font-size:12.5px;white-space:nowrap;transition:.15s}
+.toggle.done{background:var(--green);border-color:var(--green);color:#08281a}
+.toggle.missed{border-color:var(--red);color:var(--red)}
+.badge-xp{font-family:var(--font-mono);font-size:11px;padding:2px 7px;border-radius:99px;background:var(--card2);color:var(--muted);font-weight:700}
+
+/* weekly quest with stepper */
+.wq{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:14px;padding:14px 15px;margin-bottom:10px}
+.wq-top{display:flex;align-items:center;gap:12px}
+.wq-top .icon{width:38px;height:38px;border-radius:10px;background:var(--cs);display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+.wq-top .title{font-weight:600;font-size:14.5px}
+.wq-top .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.wq-bar{margin-top:10px}
+.wq-controls{display:flex;align-items:center;gap:8px;margin-top:11px}
+.stepbtn{width:32px;height:32px;border-radius:9px;border:1px solid var(--line-strong);background:var(--card2);color:var(--text);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center}
+.stepbtn:active{transform:scale(.94)}
+.wq-input{flex:1;display:flex;align-items:center;gap:8px}
+.wq-input input[type=number]{width:100%;background:var(--bg-soft);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:8px 10px;font-family:var(--font-mono);font-size:14px}
+.wq-input .u{font-size:12px;color:var(--muted);white-space:nowrap}
+
+/* ---------- buttons ---------- */
+.btn{border:1px solid var(--line-strong);background:var(--card2);color:var(--text);border-radius:11px;padding:10px 16px;font-weight:600;font-size:13.5px}
+.btn:hover{border-color:var(--blue)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{opacity:.92}
+.btn.ghost{background:transparent}
+.btn.sm{padding:7px 12px;font-size:12.5px;border-radius:9px}
+.btn.block{width:100%}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ---------- calendar ---------- */
+.calnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.calnav .m{font-family:var(--font-display);font-weight:700;font-size:17px;text-transform:capitalize}
+.calnav .arrows{display:flex;gap:6px}
+.iconbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center}
+.weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+.weekdays div{text-align:center;font-size:11px;color:var(--muted2);font-weight:600}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.daycell{aspect-ratio:1;border-radius:11px;border:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative;font-size:12.5px}
+.daycell.empty{border:none;background:transparent}
+.daycell.future{opacity:.35}
+.daycell:not(.empty):not(.future):hover{border-color:var(--blue)}
+.daycell.today{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.daycell .num{font-weight:700;font-family:var(--font-mono)}
+.daycell .dots{display:flex;gap:2px}
+.daycell .dots span{width:5px;height:5px;border-radius:50%;background:var(--line-strong)}
+.daycell.status-full{background:var(--green-soft);border-color:rgba(51,193,122,.35)}
+.daycell.status-partial{background:var(--blue-soft)}
+.daycell.status-missed{background:var(--red-soft);border-color:rgba(240,85,79,.3)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+.weeklist{margin-top:14px}
+.weekrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;flex-wrap:wrap}
+.weekrow .lbl{flex:1;min-width:120px;color:var(--muted)}
+.weekrow .lbl b{color:var(--text)}
+.weekrow input{width:64px;background:var(--bg-soft);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 8px;font-family:var(--font-mono)}
+.weekrow .tag{font-size:11px;padding:3px 8px;border-radius:99px;font-weight:700}
+.tag.ok{background:var(--green-soft);color:var(--green)}
+.tag.bad{background:var(--red-soft);color:var(--red)}
+.tag.open{background:var(--card2);color:var(--muted)}
+
+/* ---------- modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(4,8,20,.7);backdrop-filter:blur(3px);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.overlay.open{display:flex}
+@media(min-width:640px){.overlay{align-items:center}}
+.modal{background:var(--card2);border:1px solid var(--line-strong);border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:460px;max-height:85vh;overflow-y:auto}
+@media(min-width:640px){.modal{border-radius:20px}}
+.modal h3{font-size:16px;margin-bottom:4px}
+.modal .msub{color:var(--muted);font-size:12.5px;margin-bottom:16px}
+.modalrow{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid var(--line)}
+.modalrow:first-of-type{border-top:none}
+.modalclose{position:sticky;top:0}
+
+/* ---------- stat cards ---------- */
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.statcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.statcard .n{font-family:var(--font-mono);font-size:22px;font-weight:700}
+.statcard .l{font-size:12px;color:var(--muted);margin-top:2px}
+.statcard.pos .n{color:var(--green)}
+.statcard.neg .n{color:var(--red)}
+.barrow{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:12.5px}
+.barrow .l{width:88px;flex:none;color:var(--muted)}
+.barrow .track{flex:1}
+.barrow .v{width:42px;flex:none;text-align:right;font-family:var(--font-mono);color:var(--muted)}
+
+/* ---------- achievements ---------- */
+.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.ach{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.ach.locked{opacity:.4}
+.ach .emoji{font-size:26px;margin-bottom:8px}
+.ach .name{font-weight:700;font-size:13px}
+.ach .desc{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+.ach.unlocked{border-color:var(--gold-soft);background:linear-gradient(160deg,var(--gold-soft),var(--card) 60%)}
+
+/* ---------- shop ---------- */
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.shopcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.shopcard .emoji{font-size:28px}
+.shopcard .name{font-weight:700;font-size:14px}
+.shopcard .cost{font-family:var(--font-mono);color:var(--gold);font-weight:700;font-size:13px}
+.histrow{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.histrow .d{color:var(--muted);font-size:11.5px}
+.histrow .c{font-family:var(--font-mono);color:var(--red);font-weight:700}
+.empty-state{text-align:center;padding:26px 10px;color:var(--muted)}
+.empty-state .e{font-size:26px;margin-bottom:8px}
+
+.infobtn{width:26px;height:26px;border-radius:50%;border:1px solid var(--line-strong);background:var(--card2);color:var(--muted);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--card3);border:1px solid var(--blue-line);border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast .e{font-size:20px}
+.toast b{font-family:var(--font-mono);color:var(--gold)}
+
+@media(max-width:420px){.hero-top{flex-wrap:wrap}.streakrow{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="topinner">
+    <div class="brand"><span class="mark">🧭</span><span>HabitQuest</span></div>
+    <button class="levelbadge" id="headerLevel" onclick="openInfo()">
+      <div class="ring-wrap"><svg width="44" height="44" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="18" fill="none" stroke="var(--line)" stroke-width="4"/>
+        <circle id="ringFillSmall" cx="22" cy="22" r="18" fill="none" stroke="var(--blue)" stroke-width="4" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="113"/>
+      </svg><div class="ring-num" id="ringNumSmall">1</div></div>
+      <div class="xpmeta"><div class="xp" id="headerXp">0 XP</div><div class="sub" id="headerSub">Level 1</div></div>
+    </button>
+  </div>
+  <div class="app"><div class="tabs" id="tabs"></div></div>
+</div>
+
+<div class="app">
+
+  <!-- HEUTE -->
+  <div class="view active" data-view="today">
+    <div class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-date" id="todayDate">—</div>
+          <div class="hero-level" id="heroLevel">Level 1</div>
+        </div>
+        <div class="hero-ring"><svg width="86" height="86" viewBox="0 0 86 86">
+          <circle cx="43" cy="43" r="36" fill="none" stroke="var(--line)" stroke-width="7"/>
+          <circle id="ringFillBig" cx="43" cy="43" r="36" fill="none" stroke="var(--blue)" stroke-width="7" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"/>
+        </svg><div class="num"><b id="ringNumBig">1</b><small>Level</small></div></div>
+      </div>
+      <div class="hero-bar">
+        <div class="row"><span>XP bis Level <span id="nextLevelNum">2</span></span><b id="xpInLevelLbl">0 / 20</b></div>
+        <div class="track"><div class="fill blue" id="levelFill" style="width:0%"></div></div>
+      </div>
+      <div class="streakrow">
+        <div class="streakitem"><div class="n" id="statStreak">0</div><div class="l">Tage-Streak 🔥</div></div>
+        <div class="streakitem"><div class="n" id="statTotalXp">0</div><div class="l">Gesamt-XP</div></div>
+        <div class="streakitem"><div class="n" id="statWeekPct">0%</div><div class="l">Wochenfortschritt</div></div>
+      </div>
+    </div>
+
+    <div class="section-title"><h2>Heutige Quests</h2><span class="hint" id="todayHint"></span></div>
+    <div id="dailyQuests"></div>
+
+    <div class="section-title"><h2>Diese Woche</h2><span class="hint" id="weekRangeLbl"></span></div>
+    <div id="weeklyQuests"></div>
+  </div>
+
+  <!-- KALENDER -->
+  <div class="view" data-view="calendar">
+    <div class="panel" style="margin-top:16px">
+      <div class="calnav">
+        <div class="m" id="calMonthLbl">Monat</div>
+        <div class="arrows">
+          <button class="iconbtn" onclick="shiftMonth(-1)">‹</button>
+          <button class="iconbtn" onclick="shiftMonth(1)">›</button>
+        </div>
+      </div>
+      <div class="weekdays"><div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div></div>
+      <div class="calgrid" id="calGrid"></div>
+      <div class="legend">
+        <span><i style="background:var(--green-soft);border:1px solid rgba(51,193,122,.35)"></i>Alle Quests erledigt</span>
+        <span><i style="background:var(--blue-soft)"></i>Teilweise erledigt</span>
+        <span><i style="background:var(--red-soft);border:1px solid rgba(240,85,79,.3)"></i>Verpasst</span>
+      </div>
+    </div>
+    <div class="section-title"><h2>Wochen bearbeiten</h2><span class="hint">Joggen &amp; Lesen rückwirkend eintragen</span></div>
+    <div class="panel" id="weekEditList"></div>
+  </div>
+
+  <!-- STATISTIK -->
+  <div class="view" data-view="stats">
+    <div class="section-title" style="margin-top:16px"><h2>Diese Woche</h2></div>
+    <div class="statgrid" id="weekStatGrid"></div>
+    <div class="panel" style="margin-top:14px" id="weekBreakdown"></div>
+
+    <div class="section-title"><h2>Dieser Monat</h2></div>
+    <div class="statgrid" id="monthStatGrid"></div>
+    <div class="panel" style="margin-top:14px" id="monthBreakdown"></div>
+  </div>
+
+  <!-- ERFOLGE -->
+  <div class="view" data-view="achievements">
+    <div class="section-title" style="margin-top:16px"><h2>Erfolge</h2><span class="hint" id="achCount"></span></div>
+    <div class="achgrid" id="achGrid"></div>
+  </div>
+
+  <!-- SHOP -->
+  <div class="view" data-view="shop">
+    <div class="section-title" style="margin-top:16px"><h2>Belohnungsshop</h2><span class="hint" id="shopXp"></span></div>
+    <div class="shopgrid" id="shopGrid"></div>
+    <div class="section-title"><h2>Eingelöst</h2></div>
+    <div class="panel" id="shopHistory"></div>
+  </div>
+
+</div>
+
+<!-- Day edit modal -->
+<div class="overlay" id="dayModal">
+  <div class="modal">
+    <div class="modalclose" style="text-align:right"><button class="iconbtn" onclick="closeDayModal()">✕</button></div>
+    <h3 id="dayModalTitle">Tag bearbeiten</h3>
+    <div class="msub" id="dayModalSub"></div>
+    <div id="dayModalBody"></div>
+  </div>
+</div>
+
+<!-- Info modal -->
+<div class="overlay" id="infoModal">
+  <div class="modal">
+    <div class="modalclose" style="text-align:right"><button class="iconbtn" onclick="closeInfo()">✕</button></div>
+    <h3>Wie funktioniert HabitQuest?</h3>
+    <div class="msub">Die Spielregeln in Kürze</div>
+    <div style="font-size:13.5px;line-height:1.6;color:var(--muted)">
+      <p><b style="color:var(--text)">Level:</b> Alle 20 XP steigst du ein Level auf.</p>
+      <p><b style="color:var(--text)">Tagesquests</b> (Sport, Spanisch, Wäsche): erledigst du sie, gibt's die XP sofort. Ist ein Tag vorbei und die Quest offen, werden die XP abgezogen. Trägst du sie später im Kalender nach, kommen die XP wieder dazu.</p>
+      <p><b style="color:var(--text)">Sportplan-Verknüpfung:</b> Hakst du im Sportplan einen Trainingstag ab, wird „10 Min Sport" für den heutigen Tag automatisch mit erledigt — du musst es nicht doppelt eintragen.</p>
+      <p><b style="color:var(--text)">Wochenquests:</b> Joggen bringt 4 XP pro Lauf, mindestens 2× pro Woche nötig — sonst gibt's am Wochenende −8 XP Strafe. Lesen bringt 2 XP ab 35 Seiten (sonst −2 XP am Wochenende), ab 50 Seiten gibt's +1 XP Bonus.</p>
+      <p><b style="color:var(--text)">Shop:</b> XP gegen Belohnungen eintauschen — die Kosten werden direkt abgezogen.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="e">✨</span><span id="toastMsg"></span></div>
+
+<script>
+/* =========================================================
+   HabitQuest — Datenmodell & State
+   ========================================================= */
+const STORAGE_KEY = 'habitquest_state_v1';
+
+const DAILY_QUESTS = [
+  {key:'sport', label:'10 Min Sport', xp:2, icon:'🏋️', color:'blue', link:'sportplan.html', linkLabel:'Sportplan'},
+  {key:'spanisch', label:'Spanisch lernen', xp:2, icon:'🗣️', color:'purple'},
+  {key:'waesche', label:'Wäsche', xp:1, icon:'🧺', color:'teal'},
+];
+
+const SHOP_ITEMS = [
+  {key:'kaltgetraenk', label:'Kaltgetränk', cost:3, icon:'🥤'},
+  {key:'pizza', label:'Pizza / Burger', cost:6, icon:'🍔'},
+  {key:'freierabend', label:'Freier Abend', cost:20, icon:'🌙'},
+  {key:'fastfood', label:'Fastfoodkette', cost:20, icon:'🍟'},
+];
+
+const ACHIEVEMENTS = [
+  {key:'first_step', name:'Erster Schritt', emoji:'🌱', desc:'Erste Tagesquest erledigt', check:s=>s.totalDone>=1},
+  {key:'streak3', name:'Guter Start', emoji:'🔥', desc:'3 Tage Streak', check:s=>s.longestStreak>=3},
+  {key:'streak7', name:'Serientäter', emoji:'⚡', desc:'7 Tage Streak', check:s=>s.longestStreak>=7},
+  {key:'streak14', name:'Eiserner Wille', emoji:'🛡️', desc:'14 Tage Streak', check:s=>s.longestStreak>=14},
+  {key:'sport10', name:'Frühaufsteher', emoji:'🏋️', desc:'10× Sport erledigt', check:s=>s.countByQuest.sport>=10},
+  {key:'spanisch10', name:'Sprachtalent', emoji:'🗣️', desc:'10× Spanisch gelernt', check:s=>s.countByQuest.spanisch>=10},
+  {key:'waesche10', name:'Ordnung muss sein', emoji:'🧺', desc:'10× Wäsche erledigt', check:s=>s.countByQuest.waesche>=10},
+  {key:'jog20', name:'Dauerläufer', emoji:'🏃', desc:'20 Läufe insgesamt', check:s=>s.totalJogs>=20},
+  {key:'read4', name:'Bücherwurm', emoji:'📖', desc:'4 Wochen Leseziel erreicht', check:s=>s.weeksReadingMet>=4},
+  {key:'fullday5', name:'Vollständiger Tag', emoji:'✅', desc:'5× alle Tagesquests an einem Tag', check:s=>s.fullDays>=5},
+  {key:'lvl5', name:'Level 5', emoji:'🥈', desc:'Level 5 erreicht', check:s=>s.level>=5},
+  {key:'lvl10', name:'Level 10', emoji:'🥇', desc:'Level 10 erreicht', check:s=>s.level>=10},
+];
+
+function todayStr(){ return fmtDate(new Date()); }
+function fmtDate(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+function parseDate(str){ const [y,m,d]=str.split('-').map(Number); return new Date(y,m-1,d); }
+function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function isPastDate(str){ return str < todayStr(); }
+
+function getMonday(d){ const r=new Date(d); const day=(r.getDay()+6)%7; r.setDate(r.getDate()-day); r.setHours(0,0,0,0); return r; }
+function getWeekInfo(d){
+  const monday = getMonday(d);
+  const sunday = addDays(monday,6);
+  // ISO week number
+  const tmp = new Date(Date.UTC(monday.getFullYear(),monday.getMonth(),monday.getDate()));
+  const dayNum = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate()+4-dayNum);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
+  const weekNo = Math.ceil((((tmp - yearStart)/86400000)+1)/7);
+  const key = `${tmp.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+  return {monday,sunday,key};
+}
+function isWeekPast(weekKey){
+  const {key} = getWeekInfo(new Date());
+  return weekKey < key;
+}
+
+function loadState(){
+  let raw;
+  try{ raw = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){ raw = null; }
+  if(!raw){
+    raw = { startDate: todayStr(), days:{}, weeks:{}, redemptions:[] };
+    saveState(raw);
+  }
+  if(!raw.startDate) raw.startDate = todayStr();
+  if(!raw.days) raw.days = {};
+  if(!raw.weeks) raw.weeks = {};
+  if(!raw.redemptions) raw.redemptions = [];
+  return raw;
+}
+function saveState(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+
+let state = loadState();
+let calCursor = new Date(); // month currently shown in calendar
+
+/* =========================================================
+   XP-Berechnung — alles wird live aus der Historie berechnet,
+   damit Strafen & Nachträge immer konsistent bleiben.
+   ========================================================= */
+function computeAll(){
+  const start = parseDate(state.startDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayS = todayStr();
+
+  let totalXP = 0;
+  let countByQuest = {sport:0,spanisch:0,waesche:0};
+  let totalDone = 0;
+  let fullDays = 0;
+  let dayStreakArr = []; // chronological true/false: at least one quest done
+  const dailyPositive = {}; // dateStr -> xp earned today (for calendar/stats), penalties excluded from "earned" view but included in total
+
+  // iterate days from start to today
+  for(let d=new Date(start); d<=today; d=addDays(d,1)){
+    const ds = fmtDate(d);
+    const rec = state.days[ds] || {};
+    const past = ds < todayS;
+    let dayXp = 0; let anyDone=false; let allDone=true;
+    DAILY_QUESTS.forEach(q=>{
+      const done = rec[q.key]===true;
+      if(done){ dayXp += q.xp; countByQuest[q.key]++; totalDone++; anyDone=true; }
+      else { allDone=false; if(past) dayXp -= q.xp; }
+    });
+    totalXP += dayXp;
+    dailyPositive[ds] = dayXp;
+    if(allDone && anyDone) fullDays++;
+    dayStreakArr.push({ds, anyDone});
+  }
+
+  // streak (consecutive days up to today, counting from most recent backwards; today counts if done, else break unless today not yet over)
+  let currentStreak = 0;
+  for(let i=dayStreakArr.length-1;i>=0;i--){
+    const item = dayStreakArr[i];
+    if(item.ds===todayS){ if(item.anyDone) currentStreak++; else continue; }
+    else if(item.anyDone) currentStreak++;
+    else break;
+  }
+  let longestStreak = 0, run=0;
+  dayStreakArr.forEach(item=>{ if(item.anyDone){ run++; longestStreak=Math.max(longestStreak,run);} else run=0; });
+
+  // weeks
+  const startWeek = getWeekInfo(start).key;
+  const curWeek = getWeekInfo(today).key;
+  let totalJogs = 0, weeksReadingMet = 0;
+  const weekXpMap = {};
+  for(let d=new Date(getWeekInfo(start).monday); ; d=addDays(d,7)){
+    const info = getWeekInfo(d);
+    if(info.key > curWeek) break;
+    const rec = state.weeks[info.key] || {jogging:0,pages:0};
+    const past = info.key < curWeek;
+    const jog = rec.jogging||0, pages = rec.pages||0;
+    let wxp = jog*4;
+    const jogMet = jog>=2;
+    if(!jogMet && past) wxp -= 8;
+    const readMet = pages>=35;
+    if(readMet) wxp += 2; else if(past) wxp -= 2;
+    if(pages>=50) wxp += 1;
+    totalXP += wxp;
+    totalJogs += jog;
+    if(readMet) weeksReadingMet++;
+    weekXpMap[info.key] = {xp:wxp, jog, pages, jogMet, readMet, past, monday:info.monday, sunday:info.sunday};
+    if(info.key === curWeek) break;
+  }
+
+  // shop redemptions
+  let redeemedTotal = 0;
+  state.redemptions.forEach(r=> redeemedTotal += r.cost);
+  totalXP -= redeemedTotal;
+
+  const clamped = Math.max(0,totalXP);
+  const level = Math.floor(clamped/20)+1;
+  const xpInLevel = clamped%20;
+
+  return {
+    totalXP, level, xpInLevel, clamped,
+    countByQuest, totalDone, fullDays,
+    currentStreak, longestStreak,
+    totalJogs, weeksReadingMet,
+    weekXpMap, curWeek, startWeek,
+    dailyPositive, redeemedTotal,
+    startDate: state.startDate,
+  };
+}
+
+/* =========================================================
+   Rendering — Header / Ring
+   ========================================================= */
+const RING_SMALL_C = 2*Math.PI*18;
+const RING_BIG_C = 2*Math.PI*36;
+
+function renderHeader(agg){
+  const pct = agg.xpInLevel/20;
+  document.getElementById('ringFillSmall').style.strokeDasharray = RING_SMALL_C;
+  document.getElementById('ringFillSmall').style.strokeDashoffset = RING_SMALL_C*(1-pct);
+  document.getElementById('ringNumSmall').textContent = agg.level;
+  document.getElementById('headerXp').textContent = `${agg.totalXP} XP`;
+  document.getElementById('headerSub').textContent = `Level ${agg.level}`;
+
+  document.getElementById('ringFillBig').style.strokeDasharray = RING_BIG_C;
+  document.getElementById('ringFillBig').style.strokeDashoffset = RING_BIG_C*(1-pct);
+  document.getElementById('ringNumBig').textContent = agg.level;
+  document.getElementById('heroLevel').textContent = `Level ${agg.level}`;
+  document.getElementById('nextLevelNum').textContent = agg.level+1;
+  document.getElementById('xpInLevelLbl').textContent = `${agg.xpInLevel} / 20`;
+  document.getElementById('levelFill').style.width = (pct*100)+'%';
+
+  document.getElementById('statStreak').textContent = agg.currentStreak;
+  document.getElementById('statTotalXp').textContent = agg.totalXP;
+
+  const wk = agg.weekXpMap[agg.curWeek];
+  const dailyMax = DAILY_QUESTS.reduce((a,q)=>a+q.xp,0)*7;
+  const weeklyTarget = 8+3; // min jog (2x4) + reading base+bonus
+  const today = new Date();
+  const daysSoFar = ((today - wk.monday)/86400000)+1;
+  let earnedThisWeek = 0;
+  for(let d=new Date(wk.monday); d<=today; d=addDays(d,1)){
+    const ds = fmtDate(d);
+    if(ds>todayStr()) break;
+    const rec = state.days[ds]||{};
+    DAILY_QUESTS.forEach(q=>{ if(rec[q.key]===true) earnedThisWeek += q.xp; });
+  }
+  earnedThisWeek += Math.max(0, wk.jog*4>8?8:wk.jog*4); // approx cap for display purposes
+  if(wk.readMet) earnedThisWeek += 2;
+  if(wk.pages>=50) earnedThisWeek += 1;
+  const possibleSoFar = DAILY_QUESTS.reduce((a,q)=>a+q.xp,0)*daysSoFar + weeklyTarget;
+  const weekPct = Math.min(100, Math.round((earnedThisWeek/Math.max(1,possibleSoFar))*100));
+  document.getElementById('statWeekPct').textContent = weekPct+'%';
+}
+
+/* =========================================================
+   Tabs
+   ========================================================= */
+const TABS = [
+  {key:'today', label:'Heute'},
+  {key:'calendar', label:'Kalender'},
+  {key:'stats', label:'Statistik'},
+  {key:'achievements', label:'Erfolge'},
+  {key:'shop', label:'Shop'},
+];
+let activeTab = 'today';
+function renderTabs(){
+  const el = document.getElementById('tabs');
+  el.innerHTML = TABS.map(t=>`<button class="tab ${t.key===activeTab?'active':''}" onclick="setTab('${t.key}')">${t.label}</button>`).join('');
+}
+function setTab(key){
+  activeTab = key;
+  renderTabs();
+  document.querySelectorAll('.view').forEach(v=> v.classList.toggle('active', v.dataset.view===key));
+  if(key==='calendar') renderCalendar();
+  if(key==='stats') renderStats();
+  if(key==='achievements') renderAchievements();
+  if(key==='shop') renderShop();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+/* =========================================================
+   HEUTE — Tagesquests
+   ========================================================= */
+function renderToday(agg){
+  const d = new Date();
+  document.getElementById('todayDate').textContent = d.toLocaleDateString('de-DE',{weekday:'long', day:'numeric', month:'long'});
+  const ts = todayStr();
+  const rec = state.days[ts] || {};
+  const doneCount = DAILY_QUESTS.filter(q=>rec[q.key]===true).length;
+  document.getElementById('todayHint').textContent = `${doneCount} / ${DAILY_QUESTS.length} erledigt`;
+
+  const html = DAILY_QUESTS.map(q=>{
+    const done = rec[q.key]===true;
+    return `<div class="quest" style="--c:var(--${q.color});--cs:var(--${q.color}-soft)">
+      <div class="icon">${q.icon}</div>
+      <div class="body">
+        <div class="title">${q.label} <span class="badge-xp">${q.xp} XP</span></div>
+        <div class="sub">${done? 'Heute erledigt ✓' : (q.key==='sport' ? 'Noch offen · zählt auch automatisch aus dem Sportplan' : 'Noch offen')}</div>
+      </div>
+      <div class="actions">
+        ${q.link?`<a class="linkbtn" href="${q.link}" target="_blank">📋 ${q.linkLabel}</a>`:''}
+        <button class="toggle ${done?'done':''}" onclick="toggleDaily('${ts}','${q.key}')">${done?'✓ Erledigt':'Abhaken'}</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('dailyQuests').innerHTML = html;
+
+  // weekly
+  const wk = agg.weekXpMap[agg.curWeek];
+  document.getElementById('weekRangeLbl').textContent = `${wk.monday.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} – ${wk.sunday.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}`;
+
+  const jogPct = Math.min(100, (wk.jog/2)*100);
+  const readPct = Math.min(100, (wk.pages/35)*100);
+  document.getElementById('weeklyQuests').innerHTML = `
+    <div class="wq" style="--c:var(--gold);--cs:var(--gold-soft)">
+      <div class="wq-top">
+        <div class="icon">🏃</div>
+        <div style="flex:1">
+          <div class="title">Joggen</div>
+          <div class="sub">4 XP je Lauf · mind. 2× diese Woche ${wk.jogMet?'<b style="color:var(--green)">✓ erreicht</b>':''}</div>
+        </div>
+        <div class="badge-xp">${wk.jog*4} XP</div>
+      </div>
+      <div class="wq-bar"><div class="track"><div class="fill gold" style="width:${jogPct}%"></div></div></div>
+      <div class="wq-controls">
+        <button class="stepbtn" onclick="stepWeek('${agg.curWeek}','jogging',-1)">−</button>
+        <div class="wq-input"><input type="number" min="0" value="${wk.jog}" id="jogInput" onchange="setWeek('${agg.curWeek}','jogging',this.value)"><span class="u">Läufe</span></div>
+        <button class="stepbtn" onclick="stepWeek('${agg.curWeek}','jogging',1)">+</button>
+      </div>
+    </div>
+    <div class="wq" style="--c:var(--green);--cs:var(--green-soft)">
+      <div class="wq-top">
+        <div class="icon">📖</div>
+        <div style="flex:1">
+          <div class="title">35 Seiten lesen</div>
+          <div class="sub">2 XP ab 35 Seiten · +1 XP Bonus ab 50 ${wk.readMet?'<b style="color:var(--green)">✓ erreicht</b>':''}</div>
+        </div>
+        <div class="badge-xp">${(wk.readMet?2:0)+(wk.pages>=50?1:0)} XP</div>
+      </div>
+      <div class="wq-bar"><div class="track"><div class="fill green" style="width:${readPct}%"></div></div></div>
+      <div class="wq-controls">
+        <button class="stepbtn" onclick="stepWeek('${agg.curWeek}','pages',-5)">−5</button>
+        <div class="wq-input"><input type="number" min="0" value="${wk.pages}" id="pagesInput" onchange="setWeek('${agg.curWeek}','pages',this.value)"><span class="u">Seiten</span></div>
+        <button class="stepbtn" onclick="stepWeek('${agg.curWeek}','pages',5)">+5</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleDaily(dateStr, key){
+  if(!state.days[dateStr]) state.days[dateStr] = {};
+  state.days[dateStr][key] = state.days[dateStr][key]===true ? false : true;
+  saveState(state);
+  refresh();
+  const q = DAILY_QUESTS.find(x=>x.key===key);
+  if(state.days[dateStr][key]) showToast(`+${q.xp} XP · ${q.label}`, '✨'); else showToast(`${q.label} zurückgesetzt`, '↩️');
+}
+function stepWeek(weekKey, field, delta){
+  if(!state.weeks[weekKey]) state.weeks[weekKey] = {jogging:0,pages:0};
+  const cur = state.weeks[weekKey][field]||0;
+  state.weeks[weekKey][field] = Math.max(0, cur+delta);
+  saveState(state);
+  refresh();
+}
+function setWeek(weekKey, field, val){
+  if(!state.weeks[weekKey]) state.weeks[weekKey] = {jogging:0,pages:0};
+  state.weeks[weekKey][field] = Math.max(0, parseInt(val)||0);
+  saveState(state);
+  refresh();
+}
+
+/* =========================================================
+   KALENDER
+   ========================================================= */
+function shiftMonth(n){ calCursor.setMonth(calCursor.getMonth()+n); renderCalendar(); }
+
+function renderCalendar(){
+  const y = calCursor.getFullYear(), m = calCursor.getMonth();
+  document.getElementById('calMonthLbl').textContent = calCursor.toLocaleDateString('de-DE',{month:'long', year:'numeric'});
+  const first = new Date(y,m,1);
+  const startOffset = (first.getDay()+6)%7; // Monday=0
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  const ts = todayStr();
+
+  let cells = '';
+  for(let i=0;i<startOffset;i++) cells += `<div class="daycell empty"></div>`;
+  for(let day=1; day<=daysInMonth; day++){
+    const d = new Date(y,m,day);
+    const ds = fmtDate(d);
+    const isFuture = ds > ts;
+    const isToday = ds === ts;
+    const rec = state.days[ds] || {};
+    const doneList = DAILY_QUESTS.map(q=> rec[q.key]===true);
+    const doneCount = doneList.filter(Boolean).length;
+    let status = '';
+    if(!isFuture && ds >= state.startDate){
+      if(doneCount===DAILY_QUESTS.length) status='status-full';
+      else if(doneCount>0) status='status-partial';
+      else if(ds<ts) status='status-missed';
+    }
+    const dots = DAILY_QUESTS.map((q,i)=>`<span style="background:${doneList[i]?`var(--${q.color})`:'var(--line-strong)'}"></span>`).join('');
+    cells += `<div class="daycell ${isFuture?'future':''} ${isToday?'today':''} ${status}" ${isFuture?'':`onclick="openDayModal('${ds}')"`}>
+      <div class="num">${day}</div>
+      ${ds>=state.startDate?`<div class="dots">${dots}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML = cells;
+
+  renderWeekEditList(y,m);
+}
+
+function renderWeekEditList(y,m){
+  const first = new Date(y,m,1);
+  const last = new Date(y,m+1,0);
+  const weeks = [];
+  let seen = new Set();
+  for(let d=new Date(getMonday(first)); d<=last; d=addDays(d,7)){
+    const info = getWeekInfo(d);
+    if(seen.has(info.key)) continue;
+    seen.add(info.key);
+    weeks.push(info);
+  }
+  const curWeek = getWeekInfo(new Date()).key;
+  const html = weeks.map(info=>{
+    const rec = state.weeks[info.key] || {jogging:0,pages:0};
+    const past = info.key < curWeek;
+    const jogMet = (rec.jogging||0)>=2;
+    const readMet = (rec.pages||0)>=35;
+    const tag = (met)=> !past ? `<span class="tag open">läuft</span>` : (met? `<span class="tag ok">erfüllt</span>` : `<span class="tag bad">verpasst</span>`);
+    return `<div class="weekrow">
+        <div class="lbl"><b>KW ${info.key.split('-W')[1]}</b> · ${info.monday.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}–${info.sunday.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}</div>
+        <span style="font-size:12px;color:var(--muted)">🏃</span>
+        <input type="number" min="0" value="${rec.jogging||0}" onchange="setWeek('${info.key}','jogging',this.value)">
+        ${tag(jogMet)}
+        <span style="font-size:12px;color:var(--muted)">📖</span>
+        <input type="number" min="0" value="${rec.pages||0}" onchange="setWeek('${info.key}','pages',this.value)">
+        ${tag(readMet)}
+      </div>`;
+  }).join('');
+  document.getElementById('weekEditList').innerHTML = html || `<div class="empty-state">Keine Wochen in diesem Monat</div>`;
+}
+
+function openDayModal(dateStr){
+  const rec = state.days[dateStr] || {};
+  const d = parseDate(dateStr);
+  document.getElementById('dayModalTitle').textContent = d.toLocaleDateString('de-DE',{weekday:'long', day:'numeric', month:'long'});
+  document.getElementById('dayModalSub').textContent = isPastDate(dateStr) ? 'Vergangener Tag — Nachträge gleichen bereits abgezogene XP wieder aus.' : 'Heutiger Tag';
+  document.getElementById('dayModalBody').innerHTML = DAILY_QUESTS.map(q=>{
+    const done = rec[q.key]===true;
+    return `<div class="modalrow">
+      <div><div style="font-weight:600;font-size:14px">${q.icon} ${q.label}</div><div style="font-size:12px;color:var(--muted)">${q.xp} XP</div></div>
+      <button class="toggle ${done?'done':''}" onclick="toggleDaily('${dateStr}','${q.key}');openDayModal('${dateStr}')">${done?'✓ Erledigt':'Abhaken'}</button>
+    </div>`;
+  }).join('');
+  document.getElementById('dayModal').classList.add('open');
+}
+function closeDayModal(){ document.getElementById('dayModal').classList.remove('open'); renderCalendar(); }
+function openInfo(){ document.getElementById('infoModal').classList.add('open'); }
+function closeInfo(){ document.getElementById('infoModal').classList.remove('open'); }
+
+/* =========================================================
+   STATISTIK
+   ========================================================= */
+function renderStats(){
+  const agg = computeAll();
+  const wk = agg.weekXpMap[agg.curWeek];
+  const dailyEarnedWeek = sumDailyXpInRange(wk.monday, new Date());
+  const dailyLostWeek = sumDailyLossInRange(wk.monday, new Date());
+  const weekEarn = dailyEarnedWeek + Math.max(0,wk.jog*4) + (wk.readMet?2:0) + (wk.pages>=50?1:0);
+  const weekLoss = dailyLostWeek + ((!wk.jogMet && wk.past)?8:0) + ((!wk.readMet && wk.past)?2:0);
+
+  document.getElementById('weekStatGrid').innerHTML = `
+    <div class="statcard pos"><div class="n">+${weekEarn}</div><div class="l">XP verdient</div></div>
+    <div class="statcard neg"><div class="n">−${weekLoss}</div><div class="l">XP verloren</div></div>
+  `;
+  const doneCountsWeek = countDailyByQuestInRange(wk.monday, addDays(wk.monday,6));
+  document.getElementById('weekBreakdown').innerHTML = questBreakdownHtml(doneCountsWeek, 7) +
+    `<div class="barrow"><div class="l">🏃 Joggen</div><div class="track"><div class="fill gold" style="width:${Math.min(100,(wk.jog/2)*100)}%"></div></div><div class="v">${wk.jog}×</div></div>
+     <div class="barrow"><div class="l">📖 Lesen</div><div class="track"><div class="fill green" style="width:${Math.min(100,(wk.pages/35)*100)}%"></div></div><div class="v">${wk.pages}S</div></div>`;
+
+  // month
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = now;
+  const daysInMonthSoFar = now.getDate();
+  const monthEarn = sumDailyXpInRange(monthStart, monthEnd);
+  const monthLoss = sumDailyLossInRange(monthStart, monthEnd);
+  document.getElementById('monthStatGrid').innerHTML = `
+    <div class="statcard pos"><div class="n">+${monthEarn}</div><div class="l">XP verdient</div></div>
+    <div class="statcard neg"><div class="n">−${monthLoss}</div><div class="l">XP verloren</div></div>
+  `;
+  const doneCountsMonth = countDailyByQuestInRange(monthStart, monthEnd);
+  document.getElementById('monthBreakdown').innerHTML = questBreakdownHtml(doneCountsMonth, daysInMonthSoFar);
+}
+function sumDailyXpInRange(from,to){
+  let sum=0;
+  for(let d=new Date(from); d<=to; d=addDays(d,1)){
+    const ds=fmtDate(d); if(ds>todayStr())break;
+    const rec = state.days[ds]||{};
+    DAILY_QUESTS.forEach(q=>{ if(rec[q.key]===true) sum+=q.xp; });
+  }
+  return sum;
+}
+function sumDailyLossInRange(from,to){
+  let sum=0;
+  for(let d=new Date(from); d<=to; d=addDays(d,1)){
+    const ds=fmtDate(d); if(ds>=todayStr())break;
+    const rec = state.days[ds]||{};
+    DAILY_QUESTS.forEach(q=>{ if(rec[q.key]!==true) sum+=q.xp; });
+  }
+  return sum;
+}
+function countDailyByQuestInRange(from,to){
+  const counts = {sport:0,spanisch:0,waesche:0};
+  for(let d=new Date(from); d<=to; d=addDays(d,1)){
+    const ds=fmtDate(d); if(ds>todayStr())break;
+    const rec = state.days[ds]||{};
+    DAILY_QUESTS.forEach(q=>{ if(rec[q.key]===true) counts[q.key]++; });
+  }
+  return counts;
+}
+function questBreakdownHtml(counts, maxDays){
+  return DAILY_QUESTS.map(q=>{
+    const c = counts[q.key]||0;
+    const pct = Math.min(100, (c/Math.max(1,maxDays))*100);
+    return `<div class="barrow"><div class="l">${q.icon} ${q.label}</div><div class="track"><div class="fill blue" style="width:${pct}%;background:var(--${q.color})"></div></div><div class="v">${c}×</div></div>`;
+  }).join('');
+}
+
+/* =========================================================
+   ERFOLGE
+   ========================================================= */
+function renderAchievements(){
+  const agg = computeAll();
+  const statsForCheck = {
+    totalDone: agg.totalDone, longestStreak: agg.longestStreak,
+    countByQuest: agg.countByQuest, totalJogs: agg.totalJogs,
+    weeksReadingMet: agg.weeksReadingMet, fullDays: agg.fullDays, level: agg.level,
+  };
+  const unlocked = ACHIEVEMENTS.filter(a=>a.check(statsForCheck));
+  document.getElementById('achCount').textContent = `${unlocked.length} / ${ACHIEVEMENTS.length} freigeschaltet`;
+  document.getElementById('achGrid').innerHTML = ACHIEVEMENTS.map(a=>{
+    const on = a.check(statsForCheck);
+    return `<div class="ach ${on?'unlocked':'locked'}">
+      <div class="emoji">${a.emoji}</div>
+      <div class="name">${a.name}</div>
+      <div class="desc">${a.desc}</div>
+    </div>`;
+  }).join('');
+}
+
+/* =========================================================
+   SHOP
+   ========================================================= */
+function renderShop(){
+  const agg = computeAll();
+  document.getElementById('shopXp').textContent = `${agg.totalXP} XP verfügbar`;
+  document.getElementById('shopGrid').innerHTML = SHOP_ITEMS.map(it=>{
+    const can = agg.totalXP >= it.cost;
+    return `<div class="shopcard">
+      <div class="emoji">${it.icon}</div>
+      <div class="name">${it.label}</div>
+      <div class="cost">−${it.cost} XP</div>
+      <button class="btn ${can?'primary':''} sm block" ${can?'':'disabled'} onclick="redeem('${it.key}')">Einlösen</button>
+    </div>`;
+  }).join('');
+  const hist = [...state.redemptions].reverse();
+  document.getElementById('shopHistory').innerHTML = hist.length ? hist.map(r=>{
+    const item = SHOP_ITEMS.find(i=>i.key===r.itemKey);
+    const d = parseDate(r.date);
+    return `<div class="histrow"><div><div>${item?item.icon:'🎁'} ${r.label}</div><div class="d">${d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</div></div><div class="c">−${r.cost} XP</div></div>`;
+  }).join('') : `<div class="empty-state"><div class="e">🎁</div>Noch nichts eingelöst</div>`;
+}
+function redeem(key){
+  const it = SHOP_ITEMS.find(i=>i.key===key);
+  const agg = computeAll();
+  if(agg.totalXP < it.cost) return;
+  state.redemptions.push({id:Date.now(), itemKey:it.key, label:it.label, cost:it.cost, date:todayStr()});
+  saveState(state);
+  refresh();
+  showToast(`${it.label} eingelöst · −${it.cost} XP`, '🎁');
+}
+
+/* =========================================================
+   Toast
+   ========================================================= */
+let toastTimer;
+function showToast(msg, emoji){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').innerHTML = msg;
+  t.querySelector('.e').textContent = emoji || '✨';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+/* =========================================================
+   Refresh / Init
+   ========================================================= */
+function refresh(){
+  const agg = computeAll();
+  renderHeader(agg);
+  renderToday(agg);
+  if(activeTab==='calendar') renderCalendar();
+  if(activeTab==='stats') renderStats();
+  if(activeTab==='achievements') renderAchievements();
+  if(activeTab==='shop') renderShop();
+}
+
+renderTabs();
+refresh();
+document.getElementById('dayModal').addEventListener('click', e=>{ if(e.target.id==='dayModal') closeDayModal(); });
+document.getElementById('infoModal').addEventListener('click', e=>{ if(e.target.id==='infoModal') closeInfo(); });
+
+/* =========================================================
+   Verknüpfung mit dem Sportplan (sportplan.html)
+   ========================================================= */
+// Reagiert live, wenn im Sportplan-Tab ein Tag abgehakt wird (per postMessage,
+// funktioniert sobald der Sportplan über den Button hier geöffnet wurde).
+window.addEventListener('message', e=>{
+  const d = e.data;
+  if(!d || d.type!=='habitquest-sync') return;
+  if(!state.days[d.date]) state.days[d.date] = {};
+  state.days[d.date][d.quest] = d.done;
+  saveState(state);
+  refresh();
+  const q = DAILY_QUESTS.find(x=>x.key===d.quest);
+  showToast(d.done ? `+${q.xp} XP · ${q.label} (via Sportplan)` : `${q.label} zurückgesetzt (via Sportplan)`, d.done?'🏋️':'↩️');
+});
+// Reagiert, wenn sich der gemeinsame Speicher in einem anderen Tab ändert
+// (z.B. Sportplan in eigenem Tab geöffnet statt per Button hier).
+window.addEventListener('storage', e=>{
+  if(e.key !== STORAGE_KEY) return;
+  state = loadState();
+  refresh();
+});
+</script>
+</body>
+</html>
