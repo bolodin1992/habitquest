@@ -336,7 +336,14 @@ button{font:inherit;cursor:pointer}
   <div class="view" data-view="shop">
     <div class="section-title" style="margin-top:16px"><h2>Belohnungsshop</h2><span class="hint" id="shopXp"></span></div>
     <div class="shopgrid" id="shopGrid"></div>
-    <div class="section-title"><h2>Eingelöst</h2></div>
+
+    <div class="section-title"><h2>Zusätzliche Belohnung</h2><span class="hint">XP frei abziehen</span></div>
+    <div class="panel" id="penaltyBox"></div>
+
+    <div class="section-title"><h2>Booster</h2><span class="hint">XP frei gutschreiben</span></div>
+    <div class="panel" id="boosterBox"></div>
+
+    <div class="section-title"><h2>Verlauf</h2></div>
     <div class="panel" id="shopHistory"></div>
   </div>
 
@@ -438,16 +445,19 @@ function loadState(){
   let raw;
   try{ raw = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){ raw = null; }
   if(!raw){
-    raw = { startDate: todayStr(), days:{}, weeks:{}, redemptions:[] };
+    raw = { startDate: todayStr(), days:{}, weeks:{}, redemptions:[], adjustments:[] };
     saveState(raw);
   }
   if(!raw.startDate) raw.startDate = todayStr();
   if(!raw.days) raw.days = {};
   if(!raw.weeks) raw.weeks = {};
   if(!raw.redemptions) raw.redemptions = [];
+  if(!raw.adjustments) raw.adjustments = [];
   return raw;
 }
-function saveState(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+function saveState(s){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
 
 let state = loadState();
 let calCursor = new Date(); // month currently shown in calendar
@@ -524,6 +534,11 @@ function computeAll(){
   let redeemedTotal = 0;
   state.redemptions.forEach(r=> redeemedTotal += r.cost);
   totalXP -= redeemedTotal;
+
+  // manuelle Anpassungen (Zusätzliche Belohnung / Booster)
+  let adjustTotal = 0;
+  state.adjustments.forEach(a=> adjustTotal += a.amount);
+  totalXP += adjustTotal;
 
   const clamped = Math.max(0,totalXP);
   const level = Math.floor(clamped/20)+1;
@@ -897,17 +912,27 @@ function renderShop(){
       <button class="btn ${can?'primary':''} sm block" ${can?'':'disabled'} onclick="redeem('${it.key}')">Einlösen</button>
     </div>`;
   }).join('');
-  const hist = [...state.redemptions].reverse();
-  document.getElementById('shopHistory').innerHTML = hist.length ? hist.map(r=>{
-    const item = SHOP_ITEMS.find(i=>i.key===r.itemKey);
-    const d = parseDate(r.date);
-    return `<div class="histrow"><div><div>${item?item.icon:'🎁'} ${r.label}</div><div class="d">${d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</div></div>
+
+  renderPenaltyBox();
+  renderBoosterBox();
+
+  const combined = [
+    ...state.redemptions.map(r=>({id:r.id, date:r.date, type:'redeem', label:r.label, amount:-r.cost, icon:(SHOP_ITEMS.find(i=>i.key===r.itemKey)||{}).icon || '🎁'})),
+    ...state.adjustments.map(a=>({id:a.id, date:a.date, type:'adjust', label:a.comment ? a.comment : (a.amount>0?'Booster':'Zusätzliche Belohnung'), amount:a.amount, icon:a.amount>0?'⚡':'⚖️'})),
+  ].sort((a,b)=> b.id-a.id);
+
+  document.getElementById('shopHistory').innerHTML = combined.length ? combined.map(entry=>{
+    const d = parseDate(entry.date);
+    const removeFn = entry.type==='redeem' ? `removeRedemption(${entry.id})` : `removeAdjustment(${entry.id})`;
+    const sign = entry.amount>0 ? '+' : '−';
+    const color = entry.amount>0 ? 'var(--green)' : 'var(--red)';
+    return `<div class="histrow"><div><div>${entry.icon} ${entry.label}</div><div class="d">${d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})}</div></div>
       <div style="display:flex;align-items:center;gap:10px">
-        <div class="c">−${r.cost} XP</div>
-        <button class="iconbtn" style="width:28px;height:28px" title="Rückgängig machen" onclick="removeRedemption(${r.id})">✕</button>
+        <div class="c" style="color:${color}">${sign}${Math.abs(entry.amount)} XP</div>
+        <button class="iconbtn" style="width:28px;height:28px" title="Rückgängig machen" onclick="${removeFn}">✕</button>
       </div>
     </div>`;
-  }).join('') : `<div class="empty-state"><div class="e">🎁</div>Noch nichts eingelöst</div>`;
+  }).join('') : `<div class="empty-state"><div class="e">🎁</div>Noch nichts im Verlauf</div>`;
 }
 function redeem(key){
   const it = SHOP_ITEMS.find(i=>i.key===key);
@@ -926,6 +951,65 @@ function removeRedemption(id){
   refresh();
   showToast(`${r.label} rückgängig gemacht · +${r.cost} XP`, '↩️');
 }
+
+/* ---------- Zusätzliche Belohnung (frei wählbarer XP-Abzug) ---------- */
+let selectedPenalty = null;
+let penaltyCommentDraft = '';
+function renderPenaltyBox(){
+  const el = document.getElementById('penaltyBox');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="wq-controls" style="flex-wrap:wrap;gap:8px;margin-top:0">
+      ${[1,2,3,4,5].map(n=>`<button class="toggle ${selectedPenalty===n?'missed':''}" style="padding:8px 14px" onclick="selectedPenalty=${n};renderPenaltyBox()">−${n} XP</button>`).join('')}
+    </div>
+    <input type="text" id="penaltyComment" placeholder="Kommentar (optional)" value="${penaltyCommentDraft.replace(/"/g,'&quot;')}" oninput="penaltyCommentDraft=this.value" style="width:100%;margin-top:12px;background:var(--bg-soft);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;font-size:13px;font-family:inherit">
+    <button class="btn block" style="margin-top:10px" ${selectedPenalty?'':'disabled'} onclick="applyPenalty()">Abziehen</button>
+  `;
+}
+function applyPenalty(){
+  if(!selectedPenalty) return;
+  const n = selectedPenalty;
+  const comment = (penaltyCommentDraft||'').trim();
+  state.adjustments.push({id:Date.now(), amount:-n, comment, date:todayStr()});
+  saveState(state);
+  selectedPenalty = null; penaltyCommentDraft = '';
+  refresh();
+  showToast(`−${n} XP verbucht${comment?': '+comment:''}`, '⚖️');
+}
+
+/* ---------- Booster (frei wählbarer XP-Bonus) ---------- */
+let selectedBooster = null;
+let boosterCommentDraft = '';
+function renderBoosterBox(){
+  const el = document.getElementById('boosterBox');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="wq-controls" style="flex-wrap:wrap;gap:8px;margin-top:0">
+      ${[1,2,3,4,5].map(n=>`<button class="toggle ${selectedBooster===n?'done':''}" style="padding:8px 14px" onclick="selectedBooster=${n};renderBoosterBox()">+${n} XP</button>`).join('')}
+    </div>
+    <input type="text" id="boosterComment" placeholder="Kommentar (optional)" value="${boosterCommentDraft.replace(/"/g,'&quot;')}" oninput="boosterCommentDraft=this.value" style="width:100%;margin-top:12px;background:var(--bg-soft);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px 10px;font-size:13px;font-family:inherit">
+    <button class="btn primary block" style="margin-top:10px" ${selectedBooster?'':'disabled'} onclick="applyBooster()">Gutschreiben</button>
+  `;
+}
+function applyBooster(){
+  if(!selectedBooster) return;
+  const n = selectedBooster;
+  const comment = (boosterCommentDraft||'').trim();
+  state.adjustments.push({id:Date.now(), amount:n, comment, date:todayStr()});
+  saveState(state);
+  selectedBooster = null; boosterCommentDraft = '';
+  refresh();
+  showToast(`+${n} XP verbucht${comment?': '+comment:''}`, '⚡');
+}
+function removeAdjustment(id){
+  const a = state.adjustments.find(x=>x.id===id);
+  if(!a) return;
+  state.adjustments = state.adjustments.filter(x=>x.id!==id);
+  saveState(state);
+  refresh();
+  showToast('Eintrag entfernt', '↩️');
+}
+
 
 /* =========================================================
    Toast
