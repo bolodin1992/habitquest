@@ -535,8 +535,8 @@ const DEFAULT_DAILY_QUESTS = [
 ];
 
 const DEFAULT_WEEKLY_QUESTS = [
-  {key:'jogging', label:'Joggen', icon:'🏃', color:'gold', unit:'Läufe', mode:'perUnit', xpPerUnit:4, min:2, step:1},
-  {key:'pages', label:'35 Seiten lesen', icon:'📖', color:'green', unit:'Seiten', mode:'threshold', min:35, baseXp:2, bonusAt:50, bonusXp:1, step:5},
+  {key:'jogging', label:'Joggen', icon:'🏃', color:'gold', unit:'Läufe', mode:'perUnit', xpPerUnit:4, min:2, step:1, link:'laufjournal.html', linkLabel:'Lauf eintragen'},
+  {key:'pages', label:'35 Seiten lesen', icon:'📖', color:'green', unit:'Seiten', mode:'threshold', min:35, baseXp:2, bonusAt:50, bonusXp:1, step:5, link:'buecher.html', linkLabel:'Zu den Büchern'},
 ];
 
 const DEFAULT_SHOP_ITEMS = [
@@ -610,6 +610,14 @@ function loadState(){
   if(!raw.adjustments) raw.adjustments = [];
   if(!raw.dailyQuests) raw.dailyQuests = JSON.parse(JSON.stringify(DEFAULT_DAILY_QUESTS));
   if(!raw.weeklyQuests) raw.weeklyQuests = JSON.parse(JSON.stringify(DEFAULT_WEEKLY_QUESTS));
+  // Migration: bestehende Standard-Wochenquests bekommen ihre Verknüpfungs-Buttons
+  // nachträglich, falls das Konto schon vor Einführung dieser Buttons existierte.
+  (function(){
+    const jog = raw.weeklyQuests.find(q=>q.key==='jogging');
+    if(jog && jog.link===undefined){ jog.link='laufjournal.html'; jog.linkLabel='Lauf eintragen'; }
+    const pages = raw.weeklyQuests.find(q=>q.key==='pages');
+    if(pages && pages.link===undefined){ pages.link='buecher.html'; pages.linkLabel='Zu den Büchern'; }
+  })();
   if(!raw.shopItems) raw.shopItems = JSON.parse(JSON.stringify(DEFAULT_SHOP_ITEMS));
   if(!raw.boosterItems) raw.boosterItems = JSON.parse(JSON.stringify(DEFAULT_BOOSTER_ITEMS));
   if(!raw.theme) raw.theme = 'dark';
@@ -900,6 +908,7 @@ function renderToday(agg){
         <div class="wq-input"><input type="number" min="0" value="${r.count}" onchange="setWeek('${agg.curWeek}','${q.key}',this.value)"><span class="u">${q.unit}</span></div>
         <button class="stepbtn" onclick="stepWeek('${agg.curWeek}','${q.key}',${q.step})">+${q.step}</button>
       </div>
+      ${q.link?`<a class="linkbtn" href="${q.link}" target="_blank" style="margin-top:10px;justify-content:center;width:100%">📋 ${q.linkLabel||'Öffnen'}</a>`:''}
     </div>`;
   }).join('') || `<div class="empty-state">Noch keine Wochenquests angelegt</div>`;
 }
@@ -1432,6 +1441,8 @@ function openItemEditor(kind, key){
         <div class="field"><label>Bonus-XP</label><input type="number" id="f_bonusXp" min="0" value="${existing&&existing.bonusXp?existing.bonusXp:0}"></div>
       </div>
       <div class="field"><label>Schrittweite bei +/- (Eingabe)</label><input type="number" id="f_step" min="1" value="${existing?existing.step:1}"></div>
+      <div class="field"><label>Verknüpfter Button (optional) — Beschriftung</label><input type="text" id="f_linkLabel" value="${existing&&existing.linkLabel?existing.linkLabel.replace(/"/g,'&quot;'):''}" placeholder="z.B. Lauf eintragen"></div>
+      <div class="field"><label>Verknüpfter Button (optional) — Datei/Link</label><input type="text" id="f_link" value="${existing&&existing.link?existing.link.replace(/"/g,'&quot;'):''}" placeholder="z.B. laufjournal.html"></div>
       <div class="field"><label>Farbe</label>${colorSwatches(existing?existing.color:'gold')}</div>
     `;
   } else if(kind==='shop'){
@@ -1449,6 +1460,7 @@ function openItemEditor(kind, key){
   }
   document.getElementById('itemModalBody').innerHTML = body;
   window._pickedColor = existing ? existing.color : (kind==='weekly'?'gold':'blue');
+  window._pickedMode = existing ? existing.mode : 'perUnit';
   document.getElementById('itemModal').classList.add('open');
 }
 function pickColor(c){
@@ -1483,7 +1495,9 @@ function saveItemEditor(){
     const mode = window._pickedMode || (existing?existing.mode:'perUnit');
     const step = Math.max(1, parseInt(val('f_step'))||1);
     const color = window._pickedColor || 'gold';
-    let data = {label, icon, unit, mode, step, color};
+    const linkLabel = (val('f_linkLabel')||'').trim();
+    const link = (val('f_link')||'').trim();
+    let data = {label, icon, unit, mode, step, color, link: link||null, linkLabel: linkLabel||null};
     if(mode==='perUnit'){
       data.xpPerUnit = Math.max(1, parseInt(val('f_xpPerUnit'))||1);
       data.min = Math.max(1, parseInt(val('f_min_pu'))||1);
@@ -1577,14 +1591,26 @@ document.getElementById('infoModal').addEventListener('click', e=>{ if(e.target.
 // funktioniert sobald der Sportplan über den Button hier geöffnet wurde).
 window.addEventListener('message', e=>{
   const d = e.data;
-  if(!d || d.type!=='habitquest-sync') return;
-  if(!state.days[d.date]) state.days[d.date] = {};
-  state.days[d.date][d.quest] = d.done;
-  saveState(state);
-  refresh();
-  const q = state.dailyQuests.find(x=>x.key===d.quest);
-  if(!q) return;
-  showToast(d.done ? `+${q.xp} XP · ${q.label} (via Sportplan)` : `${q.label} zurückgesetzt (via Sportplan)`, d.done?'🏋️':'↩️');
+  if(!d) return;
+  if(d.type==='habitquest-sync'){
+    if(!state.days[d.date]) state.days[d.date] = {};
+    state.days[d.date][d.quest] = d.done;
+    saveState(state);
+    refresh();
+    const q = state.dailyQuests.find(x=>x.key===d.quest);
+    if(!q) return;
+    showToast(d.done ? `+${q.xp} XP · ${q.label} (via Sportplan)` : `${q.label} zurückgesetzt (via Sportplan)`, d.done?'🏋️':'↩️');
+    return;
+  }
+  if(d.type==='habitquest-week-sync'){
+    if(!state.weeks[d.weekKey]) state.weeks[d.weekKey] = {};
+    state.weeks[d.weekKey][d.quest] = Math.max(0, (state.weeks[d.weekKey][d.quest]||0) + d.delta);
+    saveState(state);
+    refresh();
+    const q = state.weeklyQuests.find(x=>x.key===d.quest);
+    if(!q) return;
+    showToast(d.delta>0 ? `${q.label} +1 (via Laufjournal)` : `${q.label} −1 (via Laufjournal)`, q.icon||'🏃');
+  }
 });
 // Reagiert, wenn sich der gemeinsame Speicher in einem anderen Tab ändert
 // (z.B. Sportplan in eigenem Tab geöffnet statt per Button hier).

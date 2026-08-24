@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<script>
+(function(){
+  try{
+    if(!sessionStorage.getItem('hq_booted')){
+      sessionStorage.setItem('hq_booted','1');
+      var u = new URL(location.href);
+      u.searchParams.set('v', Date.now());
+      location.replace(u.toString());
+    }
+  }catch(e){}
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Laufjournal · HabitQuest</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0b1224">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Laufjournal">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1224; --bg-soft:#0f1830;
+  --card:#131d3a; --card2:#182444; --card3:#1d2c52;
+  --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+  --text:#eef1fb; --muted:#93a1c4; --muted2:#5f6f95;
+  --gold:#f4b740; --gold-soft:rgba(244,183,64,.16);
+  --green:#33c17a; --green-soft:rgba(51,193,122,.16);
+  --red:#f0554f; --red-soft:rgba(240,85,79,.16);
+  --radius:18px; --font-display:'Space Grotesk',Inter,sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer}
+.app{max-width:720px;margin:0 auto;padding:0 16px 40px}
+.top{position:sticky;top:0;z-index:20;background:rgba(11,18,36,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.topinner{max-width:720px;margin:0 auto;padding:14px 16px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:8px}
+.back:hover{color:var(--gold)}
+.brand{display:flex;align-items:center;gap:9px}
+.brand .mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#ffd684);display:flex;align-items:center;justify-content:center;font-size:17px}
+.brand span{font-family:var(--font-display);font-weight:700;font-size:18px}
+
+.segtabs{display:flex;gap:6px;margin:16px 0}
+.segtab{flex:1;border:1px solid var(--line);background:var(--card);color:var(--muted);padding:10px 8px;border-radius:12px;font-weight:600;font-size:13px;text-align:center}
+.segtab.active{background:var(--gold);border-color:var(--gold);color:#241a04}
+
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.field input{width:100%;background:var(--bg-soft);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font-size:15px;font-family:var(--font-mono)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.timegroup{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pacepreview{background:var(--gold-soft);border:1px solid rgba(244,183,64,.35);border-radius:12px;padding:14px;text-align:center;margin-bottom:14px}
+.pacepreview .n{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--gold)}
+.pacepreview .l{font-size:11.5px;color:var(--muted);margin-top:2px}
+.btn{border:1px solid var(--line-strong);background:var(--card2);color:var(--text);border-radius:11px;padding:12px 16px;font-weight:600;font-size:14px}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:#241a04}
+.btn.block{width:100%}
+.btn:disabled{opacity:.4}
+
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.statcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.statcard .n{font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--gold)}
+.statcard .l{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+.chartbox{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.chartbox h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.chart-svg{width:100%;height:120px;display:block}
+.chart-empty{text-align:center;color:var(--muted);font-size:13px;padding:20px 0}
+
+.runrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.runrow:first-child{border-top:none}
+.runrow .d{flex:none;width:64px}
+.runrow .d .day{font-family:var(--font-mono);font-weight:700;font-size:14px}
+.runrow .d .mo{font-size:10.5px;color:var(--muted);text-transform:uppercase}
+.runrow .m{flex:1;display:flex;gap:14px;font-size:13px}
+.runrow .m .v{font-family:var(--font-mono);font-weight:700}
+.runrow .m .l{font-size:10px;color:var(--muted)}
+.runrow .del{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--muted);flex:none}
+.empty-state{text-align:center;padding:26px 10px;color:var(--muted)}
+.empty-state .e{font-size:26px;margin-bottom:8px}
+
+.synctoast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:10px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center}
+.synctoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="topinner">
+    <a class="back" href="index.html">← Zurück zu HabitQuest</a>
+    <div class="brand"><span class="mark">🏃</span><span>Laufjournal</span></div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="segtabs" id="segtabs"></div>
+
+  <!-- NEUER LAUF -->
+  <div class="view" data-view="new">
+    <div class="panel">
+      <div class="field"><label>Datum</label><input type="date" id="inDate"></div>
+      <div class="row2">
+        <div class="field"><label>Kilometer</label><input type="number" id="inKm" step="0.01" min="0" placeholder="5.00" inputmode="decimal"></div>
+        <div></div>
+      </div>
+      <div class="field"><label>Zeit</label>
+        <div class="timegroup">
+          <input type="number" id="inMin" min="0" placeholder="Minuten">
+          <input type="number" id="inSec" min="0" max="59" placeholder="Sekunden">
+        </div>
+      </div>
+      <div class="pacepreview">
+        <div class="n" id="pacePreview">—:—</div>
+        <div class="l">Pace min/km</div>
+      </div>
+      <button class="btn primary block" onclick="saveRun()">Lauf speichern</button>
+    </div>
+  </div>
+
+  <!-- VERLAUF -->
+  <div class="view" data-view="history">
+    <div class="panel" id="runList"></div>
+  </div>
+
+  <!-- STATISTIK -->
+  <div class="view" data-view="stats">
+    <div class="statgrid" id="summaryStats"></div>
+    <div class="chartbox"><h3>Kilometer pro Lauf</h3><div id="chartKm"></div></div>
+    <div class="chartbox"><h3>Laufdauer (Minuten)</h3><div id="chartDuration"></div></div>
+    <div class="chartbox"><h3>Pace-Entwicklung (min/km)</h3><div id="chartPace"></div></div>
+  </div>
+</div>
+
+<div class="synctoast" id="syncToast"></div>
+
+<script>
+const RUNS_KEY = 'habitquest_runs_v1';
+const HQ_KEY = 'habitquest_state_v1';
+
+function todayStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function fmtDateObj(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function getMonday(d){ const r=new Date(d); const day=(r.getDay()+6)%7; r.setDate(r.getDate()-day); r.setHours(0,0,0,0); return r; }
+function getISOWeekKey(d){
+  const tmp = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const dayNum = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate()+4-dayNum);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
+  const weekNo = Math.ceil((((tmp-yearStart)/86400000)+1)/7);
+  return `${tmp.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
+}
+function fmtPace(secPerKm){
+  if(!isFinite(secPerKm) || secPerKm<=0) return '—:—';
+  const m = Math.floor(secPerKm/60), s = Math.round(secPerKm%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function fmtDuration(totalSec){
+  const m = Math.floor(totalSec/60), s = totalSec%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+function loadRuns(){
+  try{ return JSON.parse(localStorage.getItem(RUNS_KEY)) || []; }catch(e){ return []; }
+}
+function saveRuns(runs){ localStorage.setItem(RUNS_KEY, JSON.stringify(runs)); }
+let runs = loadRuns();
+
+/* ---------- Sync mit HabitQuest (Wochenquest "jogging") ---------- */
+function syncJoggingCount(dateStr, delta){
+  const weekKey = getISOWeekKey(parseDate(dateStr));
+  try{
+    const raw = JSON.parse(localStorage.getItem(HQ_KEY));
+    if(raw){
+      if(!raw.weeks) raw.weeks = {};
+      if(!raw.weeks[weekKey]) raw.weeks[weekKey] = {};
+      raw.weeks[weekKey].jogging = Math.max(0, (raw.weeks[weekKey].jogging||0) + delta);
+      localStorage.setItem(HQ_KEY, JSON.stringify(raw));
+    }
+  }catch(e){}
+  if(window.opener){
+    try{ window.opener.postMessage({type:'habitquest-week-sync', quest:'jogging', delta, weekKey}, '*'); }catch(e){}
+  }
+  showSyncToast(delta>0 ? '✓ Zählt als Lauf in HabitQuest' : '↩️ Lauf in HabitQuest entfernt');
+}
+function showSyncToast(msg){
+  const t = document.getElementById('syncToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ---------- Tabs ---------- */
+const TABS = [ {key:'new', label:'➕ Neuer Lauf'}, {key:'history', label:'📋 Verlauf'}, {key:'stats', label:'📊 Statistik'} ];
+let activeTab = 'new';
+function renderTabs(){
+  document.getElementById('segtabs').innerHTML = TABS.map(t=>`<button class="segtab ${t.key===activeTab?'active':''}" onclick="setTab('${t.key}')">${t.label}</button>`).join('');
+}
+function setTab(key){
+  activeTab = key;
+  renderTabs();
+  document.querySelectorAll('.view').forEach(v=> v.classList.toggle('active', v.dataset.view===key));
+  if(key==='history') renderHistory();
+  if(key==='stats') renderStats();
+}
+
+/* ---------- Neuer Lauf ---------- */
+function updatePacePreview(){
+  const km = parseFloat(document.getElementById('inKm').value)||0;
+  const min = parseInt(document.getElementById('inMin').value)||0;
+  const sec = parseInt(document.getElementById('inSec').value)||0;
+  const totalSec = min*60+sec;
+  const pace = km>0 ? totalSec/km : 0;
+  document.getElementById('pacePreview').textContent = fmtPace(pace);
+}
+function saveRun(){
+  const date = document.getElementById('inDate').value || todayStr();
+  const km = parseFloat(document.getElementById('inKm').value);
+  const min = parseInt(document.getElementById('inMin').value)||0;
+  const sec = parseInt(document.getElementById('inSec').value)||0;
+  const totalSec = min*60+sec;
+  if(!km || km<=0 || totalSec<=0){ showSyncToast('⚠️ Bitte Kilometer und Zeit angeben'); return; }
+  const pace = totalSec/km;
+  runs.push({id:Date.now(), date, km, seconds:totalSec, pace});
+  saveRuns(runs);
+  syncJoggingCount(date, 1);
+  document.getElementById('inKm').value='';
+  document.getElementById('inMin').value='';
+  document.getElementById('inSec').value='';
+  updatePacePreview();
+  setTab('history');
+}
+function deleteRun(id){
+  const r = runs.find(x=>x.id===id);
+  if(!r) return;
+  runs = runs.filter(x=>x.id!==id);
+  saveRuns(runs);
+  syncJoggingCount(r.date, -1);
+  renderHistory();
+  if(activeTab==='stats') renderStats();
+}
+
+/* ---------- Verlauf ---------- */
+function renderHistory(){
+  const sorted = [...runs].sort((a,b)=> b.date.localeCompare(a.date) || b.id-a.id);
+  document.getElementById('runList').innerHTML = sorted.length ? sorted.map(r=>{
+    const d = parseDate(r.date);
+    return `<div class="runrow">
+      <div class="d"><div class="day">${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}</div><div class="mo">${d.toLocaleDateString('de-DE',{year:'numeric'})}</div></div>
+      <div class="m">
+        <div><div class="v">${r.km.toFixed(2)}</div><div class="l">km</div></div>
+        <div><div class="v">${fmtDuration(r.seconds)}</div><div class="l">Zeit</div></div>
+        <div><div class="v">${fmtPace(r.pace)}</div><div class="l">Pace/km</div></div>
+      </div>
+      <button class="del" onclick="deleteRun(${r.id})">✕</button>
+    </div>`;
+  }).join('') : `<div class="empty-state"><div class="e">🏃</div>Noch keine Läufe eingetragen</div>`;
+}
+
+/* ---------- Statistik ---------- */
+function renderStats(){
+  const totalKm = runs.reduce((a,r)=>a+r.km,0);
+  const totalSec = runs.reduce((a,r)=>a+r.seconds,0);
+  const avgPace = totalKm>0 ? totalSec/totalKm : 0;
+  const bestPace = runs.length ? Math.min(...runs.map(r=>r.pace)) : 0;
+  document.getElementById('summaryStats').innerHTML = `
+    <div class="statcard"><div class="n">${runs.length}</div><div class="l">Läufe gesamt</div></div>
+    <div class="statcard"><div class="n">${totalKm.toFixed(1)}</div><div class="l">Kilometer gesamt</div></div>
+    <div class="statcard"><div class="n">${fmtPace(avgPace)}</div><div class="l">Ø Pace min/km</div></div>
+    <div class="statcard"><div class="n">${fmtPace(bestPace)}</div><div class="l">Beste Pace min/km</div></div>
+  `;
+  const sorted = [...runs].sort((a,b)=> a.date.localeCompare(b.date) || a.id-b.id).slice(-30);
+  drawChart('chartKm', sorted.map(r=>r.km), '#f4b740', v=>v.toFixed(1));
+  drawChart('chartDuration', sorted.map(r=>r.seconds/60), '#33c17a', v=>Math.round(v)+'m');
+  drawChart('chartPace', sorted.map(r=>r.pace/60), '#8b7cf6', v=>fmtPace(v*60), true);
+}
+
+/* Minimalistische SVG-Liniendiagramme, ohne externe Bibliothek */
+function drawChart(containerId, values, color, labelFn, invert){
+  const el = document.getElementById(containerId);
+  if(!values.length){ el.innerHTML = `<div class="chart-empty">Noch keine Daten</div>`; return; }
+  const w = 320, h = 110, pad = 8;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max-min) || 1;
+  const norm = v => invert
+    ? pad + ((v-min)/range) * (h-2*pad)
+    : (h-pad) - ((v-min)/range) * (h-2*pad);
+  const stepX = values.length>1 ? (w-2*pad)/(values.length-1) : 0;
+  const points = values.map((v,i)=> `${pad+i*stepX},${norm(v)}`).join(' ');
+  const dots = values.map((v,i)=> `<circle cx="${pad+i*stepX}" cy="${norm(v)}" r="3" fill="${color}"/>`).join('');
+  const last = values[values.length-1];
+  el.innerHTML = `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    ${dots}
+  </svg>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px">
+    <span>${labelFn(min)}</span><span style="color:var(--text);font-weight:700">Letzter: ${labelFn(last)}</span><span>${labelFn(max)}</span>
+  </div>`;
+}
+
+/* ---------- Init ---------- */
+document.getElementById('inDate').value = todayStr();
+['inKm','inMin','inSec'].forEach(id=> document.getElementById(id).addEventListener('input', updatePacePreview));
+renderTabs();
+updatePacePreview();
+</script>
+</body>
+</html>
