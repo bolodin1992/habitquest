@@ -306,12 +306,7 @@ function renderStats(){
   document.getElementById('statPagesPerDay').textContent = (pagesWeek/7).toFixed(1);
 
   const last12 = weekEntries.slice(-12);
-  const pagesDateRange = last12.length ? fmtWeekRange(last12[0].monday, last12[last12.length-1].monday) : '';
-  drawChart('chartPages', last12.map(w=>w.pages), '#33c17a', v=>Math.round(v)+'S', false, false, pagesDateRange);
-}
-function fmtWeekRange(fromMonday, toMonday){
-  const opt = {day:'2-digit',month:'2-digit',year:'numeric'};
-  return `${fromMonday.toLocaleDateString('de-DE',opt)} → ${toMonday.toLocaleDateString('de-DE',opt)} (chronologisch, je Wochenanfang)`;
+  drawChart('chartPages', last12.map(w=>w.pages), '#33c17a', v=>Math.round(v)+'S', false, false, last12.map(w=>w.monday));
 }
 
 function isoWeekKeyToMonday(key){
@@ -324,12 +319,16 @@ function isoWeekKeyToMonday(key){
   const monday = addDays(week1Monday, (week-1)*7);
   return new Date(monday.getFullYear(), monday.getMonth(), monday.getDate());
 }
+function shortDate(d){
+  return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}`;
+}
 
-/* Minimalistische SVG-Diagramme, ohne externe Bibliothek */
-function drawChart(containerId, values, color, labelFn, showLast, isBarMonths, dateRangeLabel){
+/* Minimalistische SVG-Diagramme, ohne externe Bibliothek. Jeder Punkt trägt sein
+   eigenes Datum (Wochenanfang) direkt darunter, damit die Zuordnung eindeutig ist. */
+function drawChart(containerId, values, color, labelFn, showLast, isBarMonths, dates){
   const el = document.getElementById(containerId);
   if(!values.length || values.every(v=>v===0)){ el.innerHTML = `<div class="chart-empty">Noch keine Daten</div>`; return; }
-  const w = 320, h = 110, pad = 8;
+  const w = 320, h = 130, pad = 8;
   const max = Math.max(...values, 1);
   if(isBarMonths){
     const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
@@ -342,20 +341,36 @@ function drawChart(containerId, values, color, labelFn, showLast, isBarMonths, d
     el.innerHTML = `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${bars}</svg>`;
     return;
   }
+  const bottomLabelH = 16, plotH = h - bottomLabelH;
   const min = Math.min(...values);
   const range = (max-min) || 1;
-  const norm = v => (h-pad-14) - ((v-min)/range) * (h-2*pad-14);
+  const norm = v => (plotH-pad) - ((v-min)/range) * (plotH-2*pad);
   const stepX = values.length>1 ? (w-2*pad)/(values.length-1) : 0;
   const points = values.map((v,i)=> `${pad+i*stepX},${norm(v)}`).join(' ');
   const dots = values.map((v,i)=> `<circle cx="${pad+i*stepX}" cy="${norm(v)}" r="3" fill="${color}"/>`).join('');
-  const last = values[values.length-1];
-  el.innerHTML = `${dateRangeLabel?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">📅 ${dateRangeLabel}</div>`:''}
-  <svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+
+  let labelIdx = [];
+  if(dates){
+    const n = values.length, maxLabels = 6;
+    if(n<=maxLabels){ labelIdx = values.map((_,i)=>i); }
+    else{
+      const step = (n-1)/(maxLabels-1);
+      for(let i=0;i<maxLabels;i++) labelIdx.push(Math.round(i*step));
+      labelIdx = [...new Set(labelIdx)];
+    }
+  }
+  const dateLabels = dates ? labelIdx.map(i=>
+    `<text x="${pad+i*stepX}" y="${h-3}" font-size="8" fill="var(--muted)" text-anchor="middle">${shortDate(dates[i])}</text>`
+  ).join('') : '';
+
+  const lastVal = values[values.length-1];
+  el.innerHTML = `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
     <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
     ${dots}
+    ${dateLabels}
   </svg>
-  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px">
-    <span>Min: ${labelFn(min)}</span><span style="color:var(--text);font-weight:700">Aktuell: ${labelFn(last)}</span><span>Max: ${labelFn(max)}</span>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:2px">
+    <span>Min: ${labelFn(min)}</span><span style="color:var(--text);font-weight:700">Letzter Wert (${dates?shortDate(dates[dates.length-1]):''}): ${labelFn(lastVal)}</span><span>Max: ${labelFn(max)}</span>
   </div>`;
 }
 
