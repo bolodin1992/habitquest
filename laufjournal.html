@@ -287,31 +287,38 @@ function renderStats(){
     <div class="statcard"><div class="n">${fmtPace(bestPace)}</div><div class="l">Beste Pace min/km</div></div>
   `;
   const sorted = [...runs].sort((a,b)=> a.date.localeCompare(b.date) || a.id-b.id).slice(-30);
-  drawChart('chartKm', sorted.map(r=>r.km), '#f4b740', v=>v.toFixed(1));
-  drawChart('chartDuration', sorted.map(r=>r.seconds/60), '#33c17a', v=>Math.round(v)+'m');
-  drawChart('chartPace', sorted.map(r=>r.pace/60), '#8b7cf6', v=>fmtPace(v*60), true);
+  const dateRange = sorted.length ? fmtDateRange(sorted[0].date, sorted[sorted.length-1].date) : '';
+  drawChart('chartKm', sorted.map(r=>r.km), '#f4b740', v=>v.toFixed(1), dateRange);
+  drawChart('chartDuration', sorted.map(r=>r.seconds/60), '#33c17a', v=>Math.round(v)+'m', dateRange);
+  drawChart('chartPace', sorted.map(r=>r.pace/60), '#8b7cf6', v=>fmtPace(v*60), dateRange);
+}
+function fmtDateRange(fromStr, toStr){
+  const f = parseDate(fromStr), t = parseDate(toStr);
+  const opt = {day:'2-digit',month:'2-digit',year:'numeric'};
+  if(fromStr===toStr) return f.toLocaleDateString('de-DE',opt);
+  return `${f.toLocaleDateString('de-DE',opt)} → ${t.toLocaleDateString('de-DE',opt)} (chronologisch)`;
 }
 
-/* Minimalistische SVG-Liniendiagramme, ohne externe Bibliothek */
-function drawChart(containerId, values, color, labelFn, invert){
+/* Minimalistische SVG-Liniendiagramme, ohne externe Bibliothek — höherer Wert wird
+   immer höher im Diagramm angezeigt (normale Achsenrichtung, keine Umkehrung). */
+function drawChart(containerId, values, color, labelFn, dateRangeLabel){
   const el = document.getElementById(containerId);
   if(!values.length){ el.innerHTML = `<div class="chart-empty">Noch keine Daten</div>`; return; }
   const w = 320, h = 110, pad = 8;
   const min = Math.min(...values), max = Math.max(...values);
   const range = (max-min) || 1;
-  const norm = v => invert
-    ? pad + ((v-min)/range) * (h-2*pad)
-    : (h-pad) - ((v-min)/range) * (h-2*pad);
+  const norm = v => (h-pad) - ((v-min)/range) * (h-2*pad);
   const stepX = values.length>1 ? (w-2*pad)/(values.length-1) : 0;
   const points = values.map((v,i)=> `${pad+i*stepX},${norm(v)}`).join(' ');
   const dots = values.map((v,i)=> `<circle cx="${pad+i*stepX}" cy="${norm(v)}" r="3" fill="${color}"/>`).join('');
   const last = values[values.length-1];
-  el.innerHTML = `<svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+  el.innerHTML = `${dateRangeLabel?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">📅 ${dateRangeLabel}</div>`:''}
+  <svg class="chart-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
     <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
     ${dots}
   </svg>
   <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px">
-    <span>${labelFn(min)}</span><span style="color:var(--text);font-weight:700">Letzter: ${labelFn(last)}</span><span>${labelFn(max)}</span>
+    <span>Min: ${labelFn(min)}</span><span style="color:var(--text);font-weight:700">Aktuell: ${labelFn(last)}</span><span>Max: ${labelFn(max)}</span>
   </div>`;
 }
 
