@@ -45,8 +45,22 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25)}
 .card.done{outline:2px solid var(--accent2)}
-.cardtop{padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.cardtop{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.cardtop:hover{background:var(--card2)}
+.cardtop-left{display:flex;align-items:center;gap:9px}
 .day{font-weight:700;font-family:'Space Grotesk',sans-serif}.tag{font-size:12px;background:var(--soft);color:#8fb4ff;padding:5px 8px;border-radius:99px}
+.donebadge{font-size:12px;color:var(--accent2);font-weight:700}
+.chevron{font-size:11px;color:var(--muted);transition:transform .2s}
+.card.open .chevron{transform:rotate(90deg)}
+.cardbody{display:none}
+.card.open .cardbody{display:block}
+.stopwatch{display:flex;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--line);background:var(--card2)}
+.stopwatch .sw-time{font-family:'Space Grotesk',monospace;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;min-width:72px}
+.stopwatch .sw-controls{display:flex;gap:8px;flex-wrap:wrap}
+.stopwatch button{padding:8px 12px;font-size:13px}
+.stopwatch button.start{background:var(--accent2);border-color:var(--accent2);color:#08281a;font-weight:700}
+.stopwatch button.stop{background:#f0554f;border-color:#f0554f;color:#fff;font-weight:700}
+.stopwatch button:disabled{opacity:.4;cursor:default}
 .exercise{display:grid;grid-template-columns:92px 1fr;gap:12px;padding:12px 16px;border-top:1px solid var(--line);align-items:center}
 .exercise svg{width:92px;height:72px;background:var(--card2);border-radius:10px}
 .exercise h3{margin:0 0 4px;font-size:15px}.exercise p{margin:0;color:var(--muted);font-size:13px}
@@ -209,6 +223,52 @@ vup:{steps:["Auf den Rücken legen, Arme über dem Kopf.","Bauch anspannen.","Ob
 pike:{steps:["In eine umgekehrte V-Position kommen, Hände auf der Matte.","Hüfte nach oben schieben und Rücken möglichst lang halten.","Ellbogen beugen und Kopf kontrolliert Richtung Matte senken.","Über die Schultern wieder hochdrücken."],tip:"Leichter: Knie etwas beugen oder Bewegungsweg verkürzen."}
 };
 
+let openDays = new Set(); // welche Tage aufgeklappt sind (nur zur Laufzeit, kein Speichern nötig)
+const stopwatches = {}; // day -> {running, elapsed(ms), startedAt}
+
+function toggleOpen(day){
+  if(openDays.has(day)) openDays.delete(day); else openDays.add(day);
+  render();
+}
+
+function currentElapsedMs(day){
+  const s = stopwatches[day];
+  if(!s) return 0;
+  return s.running ? (Date.now()-s.startedAt) : (s.elapsed||0);
+}
+function fmtStopwatch(ms){
+  const totalSec = Math.floor(ms/1000);
+  const m = Math.floor(totalSec/60), s = totalSec%60;
+  return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+function startStopwatch(day){
+  if(!stopwatches[day]) stopwatches[day] = {running:false, elapsed:0, startedAt:null};
+  const s = stopwatches[day];
+  if(s.running) return;
+  s.running = true;
+  s.startedAt = Date.now() - (s.elapsed||0);
+  render();
+}
+function stopStopwatch(day){
+  const s = stopwatches[day];
+  if(!s || !s.running) return;
+  s.elapsed = Date.now() - s.startedAt;
+  s.running = false;
+  render();
+}
+function resetStopwatch(day){
+  stopwatches[day] = {running:false, elapsed:0, startedAt:null};
+  render();
+}
+setInterval(()=>{
+  Object.keys(stopwatches).forEach(day=>{
+    if(stopwatches[day].running){
+      const el = document.getElementById("timer-"+day);
+      if(el) el.textContent = fmtStopwatch(currentElapsedMs(day));
+    }
+  });
+}, 500);
+
 function render(){
  const filter=document.getElementById("filter").value;
  const cards=document.getElementById("cards");cards.innerHTML="";
@@ -217,8 +277,28 @@ function render(){
    const week=day<=7?"week1":day<=14?"week2":day<=21?"week3":day<=28?"week4":"week5";
    if(filter!=="all"&&filter!==week)return;
    const done=localStorage.getItem("day"+day)==="1";
+   const isOpen=openDays.has(day);
+   const sw=stopwatches[day]||{running:false,elapsed:0};
    const exercises=p[2].map((key,n)=>{const e=E[key],g=G[key];const steps=g.steps.map(x=>`<li>${x}</li>`).join("");return `<div class="exercise">${svg(e[2])}<div><h3>${n+1}. ${e[0]}</h3><p>${e[1]} · 40 Sek.</p></div></div><details class="guide"><summary>So geht's</summary><ol>${steps}</ol><div class="tip"><strong>Tipp:</strong> ${g.tip}</div></details>`}).join("");
-   cards.insertAdjacentHTML("beforeend",`<article class="card ${done?"done":""}"><div class="cardtop"><span class="day">Tag ${day}</span><span class="tag">${p[1]}</span></div>${exercises}<label class="check"><input type="checkbox" ${done?"checked":""} onchange="toggleDay(${day},this.checked)"> Tag geschafft</label></article>`);
+   const stopwatchHtml=`<div class="stopwatch">
+     <div class="sw-time" id="timer-${day}">${fmtStopwatch(currentElapsedMs(day))}</div>
+     <div class="sw-controls">
+       <button class="start" onclick="event.stopPropagation();startStopwatch(${day})" ${sw.running?"disabled":""}>▶ Start</button>
+       <button class="stop" onclick="event.stopPropagation();stopStopwatch(${day})" ${sw.running?"":"disabled"}>⏸ Stopp</button>
+       <button onclick="event.stopPropagation();resetStopwatch(${day})">↺ Reset</button>
+     </div>
+   </div>`;
+   cards.insertAdjacentHTML("beforeend",`<article class="card ${done?"done":""} ${isOpen?"open":""}">
+     <div class="cardtop" onclick="toggleOpen(${day})">
+       <div class="cardtop-left"><span class="day">Tag ${day}</span><span class="tag">${p[1]}</span>${done?'<span class="donebadge">✓ erledigt</span>':""}</div>
+       <span class="chevron">▶</span>
+     </div>
+     <div class="cardbody">
+       ${stopwatchHtml}
+       ${exercises}
+       <label class="check"><input type="checkbox" ${done?"checked":""} onclick="event.stopPropagation()" onchange="toggleDay(${day},this.checked)"> Tag geschafft</label>
+     </div>
+   </article>`);
  });
  updateProgress();
 }
