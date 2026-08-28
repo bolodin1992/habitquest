@@ -15,7 +15,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
-<title>Sportplan · 30 Tage · HabitQuest</title>
+<title>Sportplan · Morgenroutine · HabitQuest</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="theme-color" content="#0b1224">
@@ -68,6 +68,13 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 .check input{width:20px;height:20px;accent-color:var(--accent)}
 .note{background:var(--card);border:1px solid var(--line);padding:16px;border-radius:16px;margin-top:16px;color:var(--muted)}
 .small{font-size:12px;color:var(--muted)}
+.phaseoverview{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
+.phaseoverview h2{margin:0 0 8px;font-family:'Space Grotesk',sans-serif;font-size:17px}
+.phaselist{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:12px}
+.phasechip{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.phasechip b{display:block;font-size:12.5px;margin-bottom:3px}
+.phasechip span{display:block;font-size:11px;color:var(--muted)}
+.phasebadge{font-size:10.5px;color:var(--muted);margin-top:2px}
 .linked{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#8fb4ff;background:var(--soft);padding:5px 10px;border-radius:99px;margin-left:8px}
 .synctoast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:10px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center}
 .synctoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -77,17 +84,27 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 <body>
 <header>
 <a class="back" href="index.html">← Zurück zu HabitQuest</a>
-<h1>Sportplan · 30 Tage</h1>
-<p>Jeden Morgen · 10 Minuten · nur Trainingsmatte, kein Equipment</p>
+<h1>Sportplan · Morgenroutine</h1>
+<p>Jeden Morgen · 10 Minuten · bis Jahresende 2026 · nur Trainingsmatte, kein Equipment</p>
 <span class="linked">🔗 Ein abgeschlossener Tag zählt automatisch als „10 Min Sport" in HabitQuest</span>
 </header>
 <div class="container">
+<div class="phaseoverview">
+<h2>Der Aufbau</h2>
+<p class="small">Wöchentlicher Wechsel zwischen Muskelgruppen — nie zwei Tage hintereinander dieselbe Gruppe: <b>Mo Oberkörper · Di Unterkörper · Mi Erholung · Do Core · Fr Ganzkörper · Sa Unterkörper & Po · So Ruhetag.</b> Über die Monate steigt der Schwierigkeitsgrad in 4 Phasen:</p>
+<div class="phaselist">
+<div class="phasechip"><b>Phase 1 · Fundament</b><span>Woche 1–4 · leichtere Varianten · 40s/20s</span></div>
+<div class="phasechip"><b>Phase 2 · Aufbau</b><span>Woche 5–9 · Standard-Varianten · 40s/20s</span></div>
+<div class="phasechip"><b>Phase 3 · Kraft</b><span>Woche 10–14 · anspruchsvoller · 45s/15s</span></div>
+<div class="phasechip"><b>Phase 4 · Herausforderung</b><span>Woche 15–Ende · schwerste Kombis · 50s/10s</span></div>
+</div>
+</div>
 <div class="toolbar">
-<select id="filter"><option value="all">Alle 30 Tage</option><option value="week1">Woche 1</option><option value="week2">Woche 2</option><option value="week3">Woche 3</option><option value="week4">Woche 4</option><option value="week5">Tage 29–30</option></select>
+<select id="filter"><option value="all">Alle Tage</option><option value="Phase 1 · Fundament">Phase 1 · Fundament</option><option value="Phase 2 · Aufbau">Phase 2 · Aufbau</option><option value="Phase 3 · Kraft">Phase 3 · Kraft</option><option value="Phase 4 · Herausforderung">Phase 4 · Herausforderung</option></select>
 <button class="primary" onclick="resetProgress()">Fortschritt zurücksetzen</button>
 </div>
 <div class="progress">
-<strong id="progressText">0 / 30 Tage geschafft</strong>
+<strong id="progressText">0 / 130 Tage geschafft</strong>
 <div class="bar"><div class="fill" id="fill"></div></div>
 </div>
 <div id="cards" class="grid"></div>
@@ -100,7 +117,7 @@ details.guide[open] summary:before{transform:rotate(90deg)}
 .guide ol{margin:2px 0 8px 20px;padding:0}.guide li{margin:5px 0;font-size:13px;color:var(--muted)}
 .tip{background:var(--card2);border-radius:9px;padding:9px;font-size:12px;color:var(--muted)}
 </style>
-<div class="note"><strong>So trainierst du:</strong> 1 Minute locker aufwärmen, danach 8 Minuten Training. Standard: 40 Sekunden Übung + 20 Sekunden Pause. Zum Schluss 1 Minute ruhig dehnen und atmen. Wenn eine Übung zu schwer ist, nimm die leichtere Variante. Saubere Technik ist wichtiger als Tempo.</div>
+<div class="note"><strong>So trainierst du:</strong> 1 Minute locker aufwärmen, danach die Übungen im angegebenen Arbeits-/Pausen-Rhythmus (steigt über die Phasen von 40s/20s auf 50s/10s). Zum Schluss 1 Minute ruhig dehnen und atmen. Wenn eine Übung zu schwer ist, nimm die leichtere Variante. Saubere Technik ist wichtiger als Tempo. <strong>Ehrlicher Hinweis:</strong> Fettabbau hängt vor allem von der gesamten Kalorienbilanz ab (Ernährung + Bewegung insgesamt) — diese Routine baut Kraft und Kondition auf und trägt zum Kalorienverbrauch bei, ist aber allein kein Garant für Fettabbau an bestimmten Stellen. Und: Muskelkater über mehrere Tage mit Kraftverlust ist ein Zeichen für zu wenig Erholung — dann lieber einen Tag pausieren statt durchzuziehen.</div>
 </div>
 <div class="synctoast" id="syncToast"></div>
 
@@ -156,48 +173,60 @@ else if(type==="pike"){s+=head+line(105,43,80,57)+line(80,57,58,72)+line(58,72,4
 return s+"</svg>";
 }
 
-const plans=[
-["Woche 1","Brust & Arme",["push","diamond","shoulder","kneePush","plank","mountain","glute","squat"]],
-["Woche 1","Beine & Po",["squat","lunge","glute","pulse","squat","lunge","glute","plank"]],
-["Woche 1","Bauch & Core",["plank","crunch","mountain","deadbug","shoulder","legraise","bicycle","plank"]],
-["Woche 1","Ganzkörper",["squat","push","mountain","glute","plank","lunge","shoulder","pulse"]],
-["Woche 1","Brust & Arme",["push","kneePush","diamond","shoulder","push","plank","mountain","push"]],
-["Woche 1","Beine & Core",["squat","glute","mountain","lunge","plank","bicycle","pulse","plank"]],
-["Woche 1","Erholung",["catcow","child","stretch","glute","deadbug","plank","stretch","catcow"]]
-];
+const TOTAL_DAYS=130; // 24. Aug 2026 bis 31. Dez 2026
 
-const week2=[
-["Woche 2","Ganzkörper",["push","squat","mountain","glute","plank","lunge","shoulder","pulse"]],
-["Woche 2","Beine",["squat","lunge","glute","pulse","lunge","squat","glute","plank"]],
-["Woche 2","Core",["plank","legraise","bicycle","deadbug","mountain","crunch","sideplank","plank"]],
-["Woche 2","Brust & Arme",["push","diamond","shoulder","push","kneePush","plank","push","shoulder"]],
-["Woche 2","Ganzkörper",["squat","push","lunge","mountain","glute","plank","shoulder","pulse"]],
-["Woche 2","Beine & Core",["lunge","squat","glute","mountain","plank","legraise","pulse","plank"]],
-["Woche 2","Mobility",["catcow","stretch","child","glute","deadbug","stretch","catcow","plank"]]
+const DAYTYPE_ORDER=["ober","unter","ruhe","core","ganz","unterpo","ruhe"];
+const DAYTYPE_LABEL={ober:"Oberkörper",unter:"Unterkörper",ruhe:"Aktive Erholung",core:"Bauch & Core",ganz:"Ganzkörper",unterpo:"Unterkörper & Po"};
+
+const RUHE_EX=["catcow","child","stretch","deadbug","catcow","stretch","child","stretch"];
+
+const TIERS={
+ leicht:{
+  ober:["kneePush","shoulder","kneePush","plank","kneePush","shoulder","plank","stretch"],
+  unter:["squat","lunge","glute","squat","lunge","glute","plank","stretch"],
+  core:["plank","crunch","deadbug","plank","crunch","catcow","plank","stretch"],
+  ganz:["squat","kneePush","mountain","glute","plank","lunge","shoulder","stretch"],
+  unterpo:["lunge","glute","squat","plank","lunge","glute","stretch","catcow"]
+ },
+ mittel:{
+  ober:["push","shoulder","kneePush","plank","push","shoulder","plank","stretch"],
+  unter:["squat","lunge","glute","pulse","squat","lunge","plank","stretch"],
+  core:["plank","crunch","bicycle","deadbug","mountain","plank","legraise","stretch"],
+  ganz:["squat","push","mountain","glute","plank","lunge","shoulder","pulse"],
+  unterpo:["lunge","glute","mountain","plank","pulse","lunge","glute","stretch"]
+ },
+ schwer:{
+  ober:["push","diamond","shoulder","plank","pike","push","plank","stretch"],
+  unter:["squat","lunge","pulse","glute","lunge","squat","pulse","plank"],
+  core:["plank","bicycle","legraise","mountain","sideplank","vup","plank","deadbug"],
+  ganz:["squat","push","mountain","pike","plank","lunge","diamond","pulse"],
+  unterpo:["lunge","glute","mountain","pulse","sideplank","lunge","glute","plank"]
+ },
+ herausforderung:{
+  ober:["push","diamond","pike","plank","diamond","push","pike","plank"],
+  unter:["squat","lunge","pulse","glute","pulse","lunge","squat","plank"],
+  core:["plank","vup","bicycle","legraise","sideplank","mountain","vup","plank"],
+  ganz:["squat","push","mountain","pike","plank","lunge","diamond","vup"],
+  unterpo:["lunge","glute","pulse","mountain","sideplank","lunge","pulse","glute"]
+ }
+};
+
+const PHASES=[
+ {from:1,to:28,tier:"leicht",label:"Phase 1 · Fundament",work:40,rest:20},
+ {from:29,to:63,tier:"mittel",label:"Phase 2 · Aufbau",work:40,rest:20},
+ {from:64,to:98,tier:"schwer",label:"Phase 3 · Kraft",work:45,rest:15},
+ {from:99,to:130,tier:"herausforderung",label:"Phase 4 · Herausforderung",work:50,rest:10}
 ];
-const week3=[
-["Woche 3","Push",["push","diamond","shoulder","pike","push","diamond","shoulder","plank"]],
-["Woche 3","Beine",["squat","lunge","glute","pulse","lunge","squat","glute","squat"]],
-["Woche 3","Core",["plank","bicycle","mountain","deadbug","sideplank","legraise","vup","plank"]],
-["Woche 3","Ganzkörper",["squat","push","mountain","glute","plank","lunge","shoulder","pike"]],
-["Woche 3","Push",["pike","push","diamond","shoulder","push","kneePush","plank","push"]],
-["Woche 3","Beine & Core",["squat","glute","mountain","lunge","plank","legraise","pulse","sideplank"]],
-["Woche 3","Erholung",["catcow","child","stretch","glute","deadbug","stretch","catcow","plank"]]
-];
-const week4=[
-["Woche 4","Push",["pike","push","diamond","shoulder","push","pike","diamond","plank"]],
-["Woche 4","Beine",["squat","lunge","pulse","glute","lunge","squat","pulse","plank"]],
-["Woche 4","Core",["plank","legraise","mountain","bicycle","sideplank","deadbug","vup","plank"]],
-["Woche 4","Ganzkörper",["squat","push","mountain","lunge","plank","glute","pike","pulse"]],
-["Woche 4","Push Challenge",["push","pike","diamond","shoulder","push","diamond","pike","plank"]],
-["Woche 4","Beine & Core",["squat","lunge","glute","mountain","plank","bicycle","pulse","sideplank"]],
-["Woche 4","Aktive Erholung",["catcow","child","stretch","glute","deadbug","stretch","catcow","plank"]]
-];
-const finalDays=[
-["Tag 29","Challenge",["push","squat","mountain","glute","plank","lunge","bicycle","pike"]],
-["Tag 30","Reset & Stretch",["catcow","child","stretch","glute","deadbug","sideplank","stretch","plank"]]
-];
-const all=[...plans,...week2,...week3,...week4,...finalDays];
+function phaseForDay(day){return PHASES.find(p=>day>=p.from&&day<=p.to)}
+
+const all=[];
+for(let day=1;day<=TOTAL_DAYS;day++){
+ const phase=phaseForDay(day);
+ const dtKey=DAYTYPE_ORDER[(day-1)%7];
+ const dtLabel=DAYTYPE_LABEL[dtKey];
+ const exercises=dtKey==="ruhe"?RUHE_EX:TIERS[phase.tier][dtKey];
+ all.push([phase.label,dtLabel,exercises,phase.work,phase.rest]);
+}
 
 
 const G={
@@ -274,12 +303,12 @@ function render(){
  const cards=document.getElementById("cards");cards.innerHTML="";
  all.forEach((p,i)=>{
    const day=i+1;
-   const week=day<=7?"week1":day<=14?"week2":day<=21?"week3":day<=28?"week4":"week5";
-   if(filter!=="all"&&filter!==week)return;
+   const phaseLabel=p[0], dtLabel=p[1], exKeys=p[2], workSec=p[3], restSec=p[4];
+   if(filter!=="all"&&filter!==phaseLabel)return;
    const done=localStorage.getItem("day"+day)==="1";
    const isOpen=openDays.has(day);
    const sw=stopwatches[day]||{running:false,elapsed:0};
-   const exercises=p[2].map((key,n)=>{const e=E[key],g=G[key];const steps=g.steps.map(x=>`<li>${x}</li>`).join("");return `<div class="exercise">${svg(e[2])}<div><h3>${n+1}. ${e[0]}</h3><p>${e[1]} · 40 Sek.</p></div></div><details class="guide"><summary>So geht's</summary><ol>${steps}</ol><div class="tip"><strong>Tipp:</strong> ${g.tip}</div></details>`}).join("");
+   const exercises=exKeys.map((key,n)=>{const e=E[key],g=G[key];const steps=g.steps.map(x=>`<li>${x}</li>`).join("");return `<div class="exercise">${svg(e[2])}<div><h3>${n+1}. ${e[0]}</h3><p>${e[1]} · ${workSec} Sek.</p></div></div><details class="guide"><summary>So geht's</summary><ol>${steps}</ol><div class="tip"><strong>Tipp:</strong> ${g.tip}</div></details>`}).join("");
    const stopwatchHtml=`<div class="stopwatch">
      <div class="sw-time" id="timer-${day}">${fmtStopwatch(currentElapsedMs(day))}</div>
      <div class="sw-controls">
@@ -290,10 +319,11 @@ function render(){
    </div>`;
    cards.insertAdjacentHTML("beforeend",`<article class="card ${done?"done":""} ${isOpen?"open":""}">
      <div class="cardtop" onclick="toggleOpen(${day})">
-       <div class="cardtop-left"><span class="day">Tag ${day}</span><span class="tag">${p[1]}</span>${done?'<span class="donebadge">✓ erledigt</span>':""}</div>
+       <div class="cardtop-left"><span class="day">Tag ${day}</span><span class="tag">${dtLabel}</span>${done?'<span class="donebadge">✓ erledigt</span>':""}</div>
        <span class="chevron">▶</span>
      </div>
      <div class="cardbody">
+       <div class="phasebadge">${phaseLabel} · ${workSec}s Arbeit / ${restSec}s Pause</div>
        ${stopwatchHtml}
        ${exercises}
        <label class="check"><input type="checkbox" ${done?"checked":""} onclick="event.stopPropagation()" onchange="toggleDay(${day},this.checked)"> Tag geschafft</label>
@@ -334,8 +364,8 @@ function showSyncToast(on){
  window._syncToastTimer=setTimeout(()=>t.classList.remove('show'),2400);
 }
 function toggleDay(day,on){localStorage.setItem("day"+day,on?"1":"0");render();syncToHabitQuest(on)}
-function updateProgress(){let n=0;for(let i=1;i<=30;i++)if(localStorage.getItem("day"+i)==="1")n++;document.getElementById("progressText").textContent=`${n} / 30 Tage geschafft`;document.getElementById("fill").style.width=(n/30*100)+"%"}
-function resetProgress(){if(confirm("Wirklich den gesamten Fortschritt löschen?")){for(let i=1;i<=30;i++)localStorage.removeItem("day"+i);render()}}
+function updateProgress(){let n=0;for(let i=1;i<=TOTAL_DAYS;i++)if(localStorage.getItem("day"+i)==="1")n++;document.getElementById("progressText").textContent=`${n} / ${TOTAL_DAYS} Tage geschafft`;document.getElementById("fill").style.width=(n/TOTAL_DAYS*100)+"%"}
+function resetProgress(){if(confirm("Wirklich den gesamten Fortschritt löschen?")){for(let i=1;i<=TOTAL_DAYS;i++)localStorage.removeItem("day"+i);render()}}
 document.getElementById("filter").addEventListener("change",render);render();
 </script>
 </body>
