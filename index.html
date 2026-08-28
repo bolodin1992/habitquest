@@ -298,6 +298,17 @@ html[data-theme="pink"] .toggle.done{color:#08281a}
 
 /* ---------- settings lists ---------- */
 .setrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.foodsuggestlist{margin-top:8px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg-soft)}
+.foodsuggestitem{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-top:1px solid var(--line);gap:10px}
+.foodsuggestitem:first-child{border-top:none}
+.foodsuggestitem .n{font-size:13.5px;font-weight:600}
+.foodsuggestitem .p{font-size:11px;color:var(--muted);margin-top:1px}
+.foodsuggestitem .k{font-family:var(--font-mono);font-weight:700;color:var(--blue);white-space:nowrap;font-size:13px}
+.foodselected{background:var(--blue-soft);border:1px solid var(--blue-line);border-radius:14px;padding:14px;margin-top:12px}
+.foodselected .n{font-weight:700;font-size:14.5px}
+.foodselected .p{font-size:12px;color:var(--muted);margin-top:2px}
+.foodqtyrow{display:flex;align-items:center;gap:10px;margin-top:12px}
+.foodkcaltotal{text-align:center;font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--blue);margin-top:10px}
 .setrow:first-child{border-top:none}
 .setrow .ic{width:32px;height:32px;border-radius:9px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
 .setrow .info{flex:1;min-width:0}
@@ -438,7 +449,15 @@ html[data-theme="pink"] .toggle.done{color:#08281a}
 
   <!-- MEHR / EINSTELLUNGEN -->
   <div class="view" data-view="settings">
-    <div class="section-title" style="margin-top:16px"><h2>Erscheinungsbild</h2></div>
+    <div class="section-title" style="margin-top:16px"><h2>Ernährung</h2></div>
+    <div class="panel">
+      <div class="field" style="margin-bottom:0"><input type="text" id="foodSearchInput" placeholder="Mahlzeit suchen, z.B. Leberkäsesemmel..." oninput="onFoodSearch()" style="width:100%;background:var(--bg-soft);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit"></div>
+      <div id="foodSuggestList"></div>
+      <div id="foodSelectedBox"></div>
+      <a class="linkbtn" href="ernaehrung.html" target="_blank" style="margin-top:12px;justify-content:center;width:100%;padding:11px">🍽️ Vollständige App öffnen</a>
+    </div>
+
+    <div class="section-title"><h2>Erscheinungsbild</h2></div>
     <div class="panel">
       <div class="themebtns">
         <button class="themebtn" id="themeBtn_dark" onclick="setTheme('dark')"><div class="prev" style="background:linear-gradient(135deg,#0b1224,#182444)"></div>Dunkel</button>
@@ -1330,6 +1349,188 @@ function exportData(){
   a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 1000);
   showToast('Backup wird heruntergeladen', '📤');
+}
+
+const MEALS = [
+ // Frühstück
+ {n:"Butterbrot",k:181,p:"1 Scheibe"},
+ {n:"Marmeladenbrot",k:228,p:"1 Scheibe"},
+ {n:"Müsli mit Milch",k:331,p:"1 Schüssel"},
+ {n:"Rührei mit Brot",k:316,p:"2 Eier"},
+ {n:"Spiegelei mit Brot",k:219,p:"1 Ei"},
+ {n:"Haferflocken mit Milch",k:313,p:"1 Portion"},
+ {n:"Pfannkuchen mit Marmelade",k:420,p:"2 Stück"},
+ {n:"Croissant",k:247,p:"1 Stück"},
+ {n:"Bircher Müsli",k:288,p:"1 Schüssel"},
+ {n:"Joghurt mit Früchten",k:157,p:"1 Becher"},
+ // Brote, Snacks, Backwaren
+ {n:"Leberkäsesemmel",k:512,p:"1 Stück"},
+ {n:"Pizza-Leberkäsesemmel",k:638,p:"1 Stück"},
+ {n:"Wurstsemmel",k:364,p:"1 Stück"},
+ {n:"Käsesemmel",k:339,p:"1 Stück"},
+ {n:"Brezel",k:263,p:"1 Stück"},
+ {n:"Döner Kebab",k:621,p:"1 Portion"},
+ {n:"Falafel-Wrap",k:480,p:"1 Stück"},
+ {n:"Thunfisch-Sandwich",k:387,p:"1 Stück"},
+ {n:"Baguette mit Schinken und Käse",k:430,p:"1 Stück"},
+ {n:"Toast Hawaii",k:338,p:"1 Portion"},
+ // Deutsche Klassiker
+ {n:"Schnitzel mit Pommes",k:866,p:"1 Teller"},
+ {n:"Currywurst mit Pommes",k:709,p:"1 Teller"},
+ {n:"Schweinebraten mit Knödel",k:761,p:"1 Teller"},
+ {n:"Kässpätzle",k:679,p:"1 Teller"},
+ {n:"Rouladen mit Kartoffeln",k:619,p:"1 Teller"},
+ {n:"Gulasch mit Nudeln",k:575,p:"1 Teller"},
+ {n:"Frikadellen mit Kartoffelsalat",k:526,p:"1 Teller"},
+ {n:"Bratwurst mit Brot",k:428,p:"1 Stück"},
+ // Pasta & Italienisch
+ {n:"Spaghetti Bolognese",k:623,p:"1 Teller"},
+ {n:"Spaghetti Carbonara",k:679,p:"1 Teller"},
+ {n:"Lasagne",k:577,p:"1 Portion"},
+ {n:"Pizza (2 Stück)",k:477,p:"2 Stück"},
+ {n:"Pizza Margherita (ganz, klein)",k:771,p:"1 Pizza"},
+ {n:"Pizza Regina (32 cm, ganz)",k:987,p:"1 Pizza"},
+ {n:"Chili con Carne",k:543,p:"1 Teller"},
+ {n:"Risotto",k:529,p:"1 Teller"},
+ {n:"Penne Arrabiata",k:470,p:"1 Teller"},
+ // Asiatisch
+ {n:"Sushi",k:337,p:"8 Stück"},
+ {n:"Pad Thai",k:580,p:"1 Teller"},
+ {n:"Gebratener Reis mit Hähnchen",k:524,p:"1 Teller"},
+ {n:"Ramen",k:481,p:"1 Schüssel"},
+ {n:"Grünes Curry mit Reis",k:578,p:"1 Teller"},
+ {n:"Frühlingsrollen",k:187,p:"2 Stück"},
+ {n:"Bami Goreng",k:522,p:"1 Teller"},
+ // Peruanisch
+ {n:"Lomo Saltado",k:667,p:"1 Teller"},
+ {n:"Ceviche",k:279,p:"1 Portion"},
+ {n:"Chaufa (peruanischer Bratreis)",k:612,p:"1 Teller"},
+ {n:"Arroz con Pollo",k:572,p:"1 Teller"},
+ {n:"Ají de Gallina",k:528,p:"1 Teller"},
+ {n:"Papa a la Huancaína",k:326,p:"1 Portion"},
+ {n:"Anticuchos mit Kartoffel",k:389,p:"1 Portion"},
+ {n:"Causa Rellena",k:335,p:"1 Portion"},
+ {n:"Chicharrón mit Süßkartoffel",k:574,p:"1 Portion"},
+ {n:"Tallarines Verdes mit Steak",k:669,p:"1 Teller"},
+ {n:"Pollo a la Brasa mit Pommes",k:718,p:"1 Portion"},
+ {n:"Empanadas",k:382,p:"2 Stück"},
+ {n:"Tacu Tacu",k:472,p:"1 Teller"},
+ // Fast Food
+ {n:"Cheeseburger",k:433,p:"1 Stück"},
+ {n:"Burger-Menü mit Pommes",k:858,p:"1 Menü"},
+ {n:"Pommes",k:381,p:"mittlere Portion"},
+ {n:"Chicken Nuggets",k:285,p:"6 Stück"},
+ {n:"Hot Dog",k:335,p:"1 Stück"},
+ {n:"Wrap",k:383,p:"1 Stück"},
+ // Salate & Suppen
+ {n:"Gemischter Salat mit Dressing",k:236,p:"1 Portion"},
+ {n:"Caesar Salad mit Hähnchen",k:425,p:"1 Portion"},
+ {n:"Griechischer Salat",k:327,p:"1 Portion"},
+ {n:"Tomatensuppe",k:148,p:"1 Teller"},
+ {n:"Linsensuppe",k:244,p:"1 Teller"},
+ {n:"Gulaschsuppe",k:282,p:"1 Teller"},
+ {n:"Brokkolisuppe",k:194,p:"1 Teller"},
+ // Vegetarisch
+ {n:"Falafel-Teller",k:522,p:"1 Teller"},
+ {n:"Gemüsepfanne mit Tofu",k:380,p:"1 Teller"},
+ {n:"Veggie-Burger",k:383,p:"1 Stück"},
+ {n:"Linsen-Curry mit Reis",k:471,p:"1 Teller"},
+ // Beilagen
+ {n:"Kartoffelsalat",k:237,p:"Beilage"},
+ {n:"Pommes (Beilage)",k:287,p:"Beilage"},
+ {n:"Reis (Beilage)",k:195,p:"Beilage"},
+ {n:"Nudeln (Beilage)",k:233,p:"Beilage"},
+ // Süßigkeiten, Kuchen & Torten
+ {n:"Schokoriegel",k:244,p:"1 Stück"},
+ {n:"Apfelkuchen",k:331,p:"1 Stück"},
+ {n:"Käsekuchen",k:381,p:"1 Stück"},
+ {n:"Schwarzwälder Kirschtorte",k:432,p:"1 Stück"},
+ {n:"Sachertorte",k:381,p:"1 Stück"},
+ {n:"Streuselkuchen",k:334,p:"1 Stück"},
+ {n:"Marmorkuchen",k:302,p:"1 Stück"},
+ {n:"Zitronenkuchen",k:288,p:"1 Stück"},
+ {n:"Möhrenkuchen (Carrot Cake)",k:377,p:"1 Stück"},
+ {n:"Schokokuchen / Brownie",k:336,p:"1 Stück"},
+ {n:"Cheesecake",k:433,p:"1 Stück"},
+ {n:"Donut",k:282,p:"1 Stück"},
+ {n:"Muffin",k:337,p:"1 Stück"},
+ {n:"Cupcake mit Frosting",k:282,p:"1 Stück"},
+ {n:"Kekse",k:191,p:"3 Stück"},
+ {n:"Gummibärchen",k:332,p:"100 g"},
+ {n:"Schokolade (Tafel)",k:537,p:"100 g"},
+ {n:"Schokolade (Stück)",k:133,p:"25 g"},
+ {n:"Lakritz",k:340,p:"100 g"},
+ {n:"Fruchtgummi",k:148,p:"Handvoll"},
+ {n:"Marzipan",k:198,p:"1 Stück"},
+ {n:"Praline",k:71,p:"1 Stück"},
+ {n:"Windbeutel",k:285,p:"1 Stück"},
+ {n:"Berliner / Krapfen",k:292,p:"1 Stück"},
+ {n:"Eclair",k:267,p:"1 Stück"},
+ {n:"Tiramisu",k:389,p:"1 Portion"},
+ {n:"Panna Cotta",k:282,p:"1 Portion"},
+ {n:"Crème brûlée",k:336,p:"1 Portion"},
+ {n:"Waffeln mit Sahne",k:434,p:"1 Portion"},
+ {n:"Kaiserschmarrn",k:522,p:"1 Portion"},
+ {n:"Eis",k:193,p:"2 Kugeln"},
+ {n:"Pudding",k:145,p:"1 Portion"},
+ // Getränke
+ {n:"Cola",k:142,p:"0,33 l"},
+ {n:"Bier",k:215,p:"0,5 l"},
+ {n:"Wein",k:144,p:"0,2 l"},
+ {n:"Latte Macchiato",k:113,p:"1 Glas"},
+ {n:"Cappuccino",k:75,p:"1 Tasse"},
+ {n:"Orangensaft",k:89,p:"0,2 l"},
+ {n:"Smoothie",k:143,p:"0,25 l"},
+];
+
+const FOOD_CUSTOM_KEY = 'habitquest_food_custom_v1';
+function loadFoodCustom(){ try{ return JSON.parse(localStorage.getItem(FOOD_CUSTOM_KEY)) || []; }catch(e){ return []; } }
+function allFoodMeals(){ return [...MEALS, ...loadFoodCustom()]; }
+
+let foodSelectedMeal = null;
+let foodQty = 1;
+
+function searchFoodMeals(query){
+  const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if(!tokens.length) return [];
+  return allFoodMeals().filter(m=>{
+    const name = m.n.toLowerCase();
+    return tokens.every(t=> name.includes(t));
+  }).slice(0,6);
+}
+function onFoodSearch(){
+  const q = document.getElementById('foodSearchInput').value;
+  const results = searchFoodMeals(q);
+  const el = document.getElementById('foodSuggestList');
+  if(!q.trim()){ el.innerHTML=''; return; }
+  el.innerHTML = results.length ? `<div class="foodsuggestlist">${results.map(m=>
+    `<div class="foodsuggestitem" onclick="selectFoodMeal(${allFoodMeals().indexOf(m)})"><div><div class="n">${m.n}</div><div class="p">${m.p}</div></div><div class="k">${m.k} kcal</div></div>`
+  ).join('')}</div>` : `<div class="foodsuggestlist"><div style="padding:14px;text-align:center;color:var(--muted);font-size:13px">Keine Treffer</div></div>`;
+}
+function selectFoodMeal(idx){
+  foodSelectedMeal = allFoodMeals()[idx];
+  foodQty = 1;
+  document.getElementById('foodSearchInput').value = foodSelectedMeal.n;
+  document.getElementById('foodSuggestList').innerHTML = '';
+  renderFoodSelectedBox();
+}
+function renderFoodSelectedBox(){
+  const el = document.getElementById('foodSelectedBox');
+  if(!foodSelectedMeal){ el.innerHTML=''; return; }
+  el.innerHTML = `<div class="foodselected">
+    <div class="n">${foodSelectedMeal.n}</div>
+    <div class="p">${foodSelectedMeal.p} · ${foodSelectedMeal.k} kcal</div>
+    <div class="foodqtyrow">
+      <button class="stepbtn" onclick="changeFoodQty(-0.5)">−</button>
+      <div style="flex:1;text-align:center;font-family:var(--font-mono);font-weight:700">${foodQty}× Portion</div>
+      <button class="stepbtn" onclick="changeFoodQty(0.5)">+</button>
+    </div>
+    <div class="foodkcaltotal">${Math.round(foodSelectedMeal.k*foodQty)} kcal</div>
+  </div>`;
+}
+function changeFoodQty(delta){
+  foodQty = Math.max(0.5, Math.round((foodQty+delta)*10)/10);
+  renderFoodSelectedBox();
 }
 
 function renderSettings(){

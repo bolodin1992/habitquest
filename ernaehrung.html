@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<script>
+(function(){
+  try{
+    if(!sessionStorage.getItem('hq_booted')){
+      sessionStorage.setItem('hq_booted','1');
+      var u = new URL(location.href);
+      u.searchParams.set('v', Date.now());
+      location.replace(u.toString());
+    }
+  }catch(e){}
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Ernährung · HabitQuest</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0b1224">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ernährung">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1224; --bg-soft:#0f1830;
+  --card:#131d3a; --card2:#182444; --card3:#1d2c52;
+  --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+  --text:#eef1fb; --muted:#93a1c4; --muted2:#5f6f95;
+  --orange:#f2994a; --orange-soft:rgba(242,153,74,.16);
+  --red:#f0554f; --red-soft:rgba(240,85,79,.16);
+  --green:#33c17a;
+  --radius:18px; --font-display:'Space Grotesk',Inter,sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer}
+.app{max-width:720px;margin:0 auto;padding:0 16px 40px}
+.top{position:sticky;top:0;z-index:20;background:rgba(11,18,36,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.topinner{max-width:720px;margin:0 auto;padding:14px 16px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;margin-bottom:8px}
+.back:hover{color:var(--orange)}
+.brand{display:flex;align-items:center;gap:9px}
+.brand .mark{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--orange),#ffc48a);display:flex;align-items:center;justify-content:center;font-size:17px}
+.brand span{font-family:var(--font-display);font-weight:700;font-size:18px}
+
+.segtabs{display:flex;gap:6px;margin:16px 0}
+.segtab{flex:1;border:1px solid var(--line);background:var(--card);color:var(--muted);padding:10px 8px;border-radius:12px;font-weight:600;font-size:13px;text-align:center}
+.segtab.active{background:var(--orange);border-color:var(--orange);color:#2c1400}
+
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.field input[type=text],.field input[type=number],.field input[type=date]{width:100%;background:var(--bg-soft);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit}
+
+.searchwrap{position:relative}
+.suggestlist{margin-top:8px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg-soft)}
+.suggestitem{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-top:1px solid var(--line);gap:10px}
+.suggestitem:first-child{border-top:none}
+.suggestitem:active{background:var(--card2)}
+.suggestitem .n{font-size:13.5px;font-weight:600}
+.suggestitem .p{font-size:11px;color:var(--muted);margin-top:1px}
+.suggestitem .k{font-family:var(--font-mono);font-weight:700;color:var(--orange);white-space:nowrap;font-size:13px}
+.suggestempty{padding:14px;text-align:center;color:var(--muted);font-size:13px}
+
+.selectedcard{background:var(--orange-soft);border:1px solid rgba(242,153,74,.4);border-radius:14px;padding:14px;margin-top:12px}
+.selectedcard .n{font-weight:700;font-size:14.5px}
+.selectedcard .p{font-size:12px;color:var(--muted);margin-top:2px}
+.qtyrow{display:flex;align-items:center;gap:10px;margin-top:12px}
+.qtybtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line-strong);background:var(--card2);color:var(--text);font-weight:700;font-size:16px}
+.qtyval{flex:1;text-align:center;font-family:var(--font-mono);font-size:16px;font-weight:700}
+.kcaltotal{text-align:center;font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--orange);margin-top:10px}
+
+.btn{border:1px solid var(--line-strong);background:var(--card2);color:var(--text);border-radius:11px;padding:12px 16px;font-weight:600;font-size:14px}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:#2c1400}
+.btn.block{width:100%}
+.btn.sm{padding:8px 12px;font-size:12.5px;border-radius:9px}
+
+.divider{text-align:center;color:var(--muted2);font-size:12px;margin:16px 0}
+
+.statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.statcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.statcard .n{font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--orange)}
+.statcard .l{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+.chartbox{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.chartbox h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.chart-svg{width:100%;height:130px;display:block}
+.chart-empty{text-align:center;color:var(--muted);font-size:13px;padding:20px 0}
+
+.daygroup{margin-bottom:16px}
+.daygroup .dhead{display:flex;justify-content:space-between;align-items:baseline;padding:0 2px 8px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.daygroup .dhead .d{font-weight:700;font-size:13.5px}
+.daygroup .dhead .t{font-family:var(--font-mono);color:var(--orange);font-weight:700;font-size:13px}
+.entryrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.entryrow:first-child{border-top:none}
+.entryrow .info{flex:1;min-width:0}
+.entryrow .n{font-weight:600;font-size:13.5px}
+.entryrow .p{font-size:11px;color:var(--muted)}
+.entryrow .k{font-family:var(--font-mono);font-weight:700;color:var(--orange);white-space:nowrap}
+.entryrow .del{width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--muted);flex:none}
+.empty-state{text-align:center;padding:26px 10px;color:var(--muted)}
+.empty-state .e{font-size:26px;margin-bottom:8px}
+.note{font-size:11.5px;color:var(--muted2);line-height:1.5;margin-top:10px}
+
+.synctoast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:10px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center}
+.synctoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="topinner">
+    <a class="back" href="index.html">← Zurück zu HabitQuest</a>
+    <div class="brand"><span class="mark">🍽️</span><span>Ernährung</span></div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="panel" style="margin-top:16px">
+    <div class="field searchwrap">
+      <label>Mahlzeit suchen</label>
+      <input type="text" id="searchInput" placeholder="z.B. Leberkäse Semmel, Schnitzel Pommes..." oninput="onSearch()" autocomplete="off">
+      <div id="suggestList"></div>
+    </div>
+    <div id="selectedBox"></div>
+    <div class="note">Reine Info-Anzeige — nichts wird gespeichert. Die kcal-Werte sind Durchschnittswerte für eine übliche Portion; reale Werte können je nach Zubereitung und Portionsgröße abweichen.</div>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Eigene Berechnung</h3>
+    <div class="field"><label>kcal pro 100 g</label><input type="number" id="calcPer100" min="0" placeholder="z.B. 250" oninput="onCalc()"></div>
+    <div class="field"><label>Menge (g)</label><input type="number" id="calcGrams" min="0" placeholder="z.B. 150" oninput="onCalc()"></div>
+    <div class="kcaltotal" id="calcResult">— kcal</div>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px">Eigene Mahlzeit hinzufügen</h3>
+    <div class="field"><label>Name</label><input type="text" id="ownName" placeholder="z.B. Omas Gulasch"></div>
+    <div class="field"><label>kcal (ca.)</label><input type="number" id="ownKcal" min="0" placeholder="z.B. 550"></div>
+    <div class="field"><label>Portion (optional)</label><input type="text" id="ownPortion" placeholder="z.B. 1 Teller"></div>
+    <button class="btn primary block" onclick="addOwnMeal()">Zur Suche hinzufügen</button>
+    <div id="ownList" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<div class="synctoast" id="syncToast"></div>
+
+<script>
+/* =========================================================
+   Mahlzeiten-Datenbank — Durchschnitts-kcal für eine übliche Portion
+   ========================================================= */
+const MEALS = [
+ // Frühstück
+ {n:"Butterbrot",k:181,p:"1 Scheibe"},
+ {n:"Marmeladenbrot",k:228,p:"1 Scheibe"},
+ {n:"Müsli mit Milch",k:331,p:"1 Schüssel"},
+ {n:"Rührei mit Brot",k:316,p:"2 Eier"},
+ {n:"Spiegelei mit Brot",k:219,p:"1 Ei"},
+ {n:"Haferflocken mit Milch",k:313,p:"1 Portion"},
+ {n:"Pfannkuchen mit Marmelade",k:420,p:"2 Stück"},
+ {n:"Croissant",k:247,p:"1 Stück"},
+ {n:"Bircher Müsli",k:288,p:"1 Schüssel"},
+ {n:"Joghurt mit Früchten",k:157,p:"1 Becher"},
+ // Brote, Snacks, Backwaren
+ {n:"Leberkäsesemmel",k:512,p:"1 Stück"},
+ {n:"Pizza-Leberkäsesemmel",k:638,p:"1 Stück"},
+ {n:"Wurstsemmel",k:364,p:"1 Stück"},
+ {n:"Käsesemmel",k:339,p:"1 Stück"},
+ {n:"Brezel",k:263,p:"1 Stück"},
+ {n:"Döner Kebab",k:621,p:"1 Portion"},
+ {n:"Falafel-Wrap",k:480,p:"1 Stück"},
+ {n:"Thunfisch-Sandwich",k:387,p:"1 Stück"},
+ {n:"Baguette mit Schinken und Käse",k:430,p:"1 Stück"},
+ {n:"Toast Hawaii",k:338,p:"1 Portion"},
+ // Deutsche Klassiker
+ {n:"Schnitzel mit Pommes",k:866,p:"1 Teller"},
+ {n:"Currywurst mit Pommes",k:709,p:"1 Teller"},
+ {n:"Schweinebraten mit Knödel",k:761,p:"1 Teller"},
+ {n:"Kässpätzle",k:679,p:"1 Teller"},
+ {n:"Rouladen mit Kartoffeln",k:619,p:"1 Teller"},
+ {n:"Gulasch mit Nudeln",k:575,p:"1 Teller"},
+ {n:"Frikadellen mit Kartoffelsalat",k:526,p:"1 Teller"},
+ {n:"Bratwurst mit Brot",k:428,p:"1 Stück"},
+ // Pasta & Italienisch
+ {n:"Spaghetti Bolognese",k:623,p:"1 Teller"},
+ {n:"Spaghetti Carbonara",k:679,p:"1 Teller"},
+ {n:"Lasagne",k:577,p:"1 Portion"},
+ {n:"Pizza (2 Stück)",k:477,p:"2 Stück"},
+ {n:"Pizza Margherita (ganz, klein)",k:771,p:"1 Pizza"},
+ {n:"Pizza Regina (32 cm, ganz)",k:987,p:"1 Pizza"},
+ {n:"Chili con Carne",k:543,p:"1 Teller"},
+ {n:"Risotto",k:529,p:"1 Teller"},
+ {n:"Penne Arrabiata",k:470,p:"1 Teller"},
+ // Asiatisch
+ {n:"Sushi",k:337,p:"8 Stück"},
+ {n:"Pad Thai",k:580,p:"1 Teller"},
+ {n:"Gebratener Reis mit Hähnchen",k:524,p:"1 Teller"},
+ {n:"Ramen",k:481,p:"1 Schüssel"},
+ {n:"Grünes Curry mit Reis",k:578,p:"1 Teller"},
+ {n:"Frühlingsrollen",k:187,p:"2 Stück"},
+ {n:"Bami Goreng",k:522,p:"1 Teller"},
+ // Peruanisch
+ {n:"Lomo Saltado",k:667,p:"1 Teller"},
+ {n:"Ceviche",k:279,p:"1 Portion"},
+ {n:"Chaufa (peruanischer Bratreis)",k:612,p:"1 Teller"},
+ {n:"Arroz con Pollo",k:572,p:"1 Teller"},
+ {n:"Ají de Gallina",k:528,p:"1 Teller"},
+ {n:"Papa a la Huancaína",k:326,p:"1 Portion"},
+ {n:"Anticuchos mit Kartoffel",k:389,p:"1 Portion"},
+ {n:"Causa Rellena",k:335,p:"1 Portion"},
+ {n:"Chicharrón mit Süßkartoffel",k:574,p:"1 Portion"},
+ {n:"Tallarines Verdes mit Steak",k:669,p:"1 Teller"},
+ {n:"Pollo a la Brasa mit Pommes",k:718,p:"1 Portion"},
+ {n:"Empanadas",k:382,p:"2 Stück"},
+ {n:"Tacu Tacu",k:472,p:"1 Teller"},
+ // Fast Food
+ {n:"Cheeseburger",k:433,p:"1 Stück"},
+ {n:"Burger-Menü mit Pommes",k:858,p:"1 Menü"},
+ {n:"Pommes",k:381,p:"mittlere Portion"},
+ {n:"Chicken Nuggets",k:285,p:"6 Stück"},
+ {n:"Hot Dog",k:335,p:"1 Stück"},
+ {n:"Wrap",k:383,p:"1 Stück"},
+ // Salate & Suppen
+ {n:"Gemischter Salat mit Dressing",k:236,p:"1 Portion"},
+ {n:"Caesar Salad mit Hähnchen",k:425,p:"1 Portion"},
+ {n:"Griechischer Salat",k:327,p:"1 Portion"},
+ {n:"Tomatensuppe",k:148,p:"1 Teller"},
+ {n:"Linsensuppe",k:244,p:"1 Teller"},
+ {n:"Gulaschsuppe",k:282,p:"1 Teller"},
+ {n:"Brokkolisuppe",k:194,p:"1 Teller"},
+ // Vegetarisch
+ {n:"Falafel-Teller",k:522,p:"1 Teller"},
+ {n:"Gemüsepfanne mit Tofu",k:380,p:"1 Teller"},
+ {n:"Veggie-Burger",k:383,p:"1 Stück"},
+ {n:"Linsen-Curry mit Reis",k:471,p:"1 Teller"},
+ // Beilagen
+ {n:"Kartoffelsalat",k:237,p:"Beilage"},
+ {n:"Pommes (Beilage)",k:287,p:"Beilage"},
+ {n:"Reis (Beilage)",k:195,p:"Beilage"},
+ {n:"Nudeln (Beilage)",k:233,p:"Beilage"},
+ // Süßigkeiten, Kuchen & Torten
+ {n:"Schokoriegel",k:244,p:"1 Stück"},
+ {n:"Apfelkuchen",k:331,p:"1 Stück"},
+ {n:"Käsekuchen",k:381,p:"1 Stück"},
+ {n:"Schwarzwälder Kirschtorte",k:432,p:"1 Stück"},
+ {n:"Sachertorte",k:381,p:"1 Stück"},
+ {n:"Streuselkuchen",k:334,p:"1 Stück"},
+ {n:"Marmorkuchen",k:302,p:"1 Stück"},
+ {n:"Zitronenkuchen",k:288,p:"1 Stück"},
+ {n:"Möhrenkuchen (Carrot Cake)",k:377,p:"1 Stück"},
+ {n:"Schokokuchen / Brownie",k:336,p:"1 Stück"},
+ {n:"Cheesecake",k:433,p:"1 Stück"},
+ {n:"Donut",k:282,p:"1 Stück"},
+ {n:"Muffin",k:337,p:"1 Stück"},
+ {n:"Cupcake mit Frosting",k:282,p:"1 Stück"},
+ {n:"Kekse",k:191,p:"3 Stück"},
+ {n:"Gummibärchen",k:332,p:"100 g"},
+ {n:"Schokolade (Tafel)",k:537,p:"100 g"},
+ {n:"Schokolade (Stück)",k:133,p:"25 g"},
+ {n:"Lakritz",k:340,p:"100 g"},
+ {n:"Fruchtgummi",k:148,p:"Handvoll"},
+ {n:"Marzipan",k:198,p:"1 Stück"},
+ {n:"Praline",k:71,p:"1 Stück"},
+ {n:"Windbeutel",k:285,p:"1 Stück"},
+ {n:"Berliner / Krapfen",k:292,p:"1 Stück"},
+ {n:"Eclair",k:267,p:"1 Stück"},
+ {n:"Tiramisu",k:389,p:"1 Portion"},
+ {n:"Panna Cotta",k:282,p:"1 Portion"},
+ {n:"Crème brûlée",k:336,p:"1 Portion"},
+ {n:"Waffeln mit Sahne",k:434,p:"1 Portion"},
+ {n:"Kaiserschmarrn",k:522,p:"1 Portion"},
+ {n:"Eis",k:193,p:"2 Kugeln"},
+ {n:"Pudding",k:145,p:"1 Portion"},
+ // Getränke
+ {n:"Cola",k:142,p:"0,33 l"},
+ {n:"Bier",k:215,p:"0,5 l"},
+ {n:"Wein",k:144,p:"0,2 l"},
+ {n:"Latte Macchiato",k:113,p:"1 Glas"},
+ {n:"Cappuccino",k:75,p:"1 Tasse"},
+ {n:"Orangensaft",k:89,p:"0,2 l"},
+ {n:"Smoothie",k:143,p:"0,25 l"},
+];
+
+const KEY = 'habitquest_food_v1';
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+
+function showToast(msg){
+  const t = document.getElementById('syncToast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ---------- Eigene Mahlzeiten (dauerhaft gespeichert, ergänzen die Suche) ---------- */
+const OWN_KEY = 'habitquest_food_custom_v1';
+function loadOwnMeals(){ try{ return JSON.parse(localStorage.getItem(OWN_KEY)) || []; }catch(e){ return []; } }
+function saveOwnMeals(list){ localStorage.setItem(OWN_KEY, JSON.stringify(list)); }
+let ownMeals = loadOwnMeals();
+
+function allMeals(){ return [...MEALS, ...ownMeals]; }
+
+function addOwnMeal(){
+  const name = (document.getElementById('ownName').value||'').trim();
+  const kcal = parseInt(document.getElementById('ownKcal').value);
+  const portion = (document.getElementById('ownPortion').value||'').trim() || '1 Portion';
+  if(!name || !kcal || kcal<=0){ showToast('⚠️ Bitte Name und kcal angeben'); return; }
+  ownMeals.push({id:Date.now(), n:name, k:kcal, p:portion, custom:true});
+  saveOwnMeals(ownMeals);
+  document.getElementById('ownName').value = '';
+  document.getElementById('ownKcal').value = '';
+  document.getElementById('ownPortion').value = '';
+  renderOwnList();
+  showToast('✓ Zur Suche hinzugefügt');
+}
+function deleteOwnMeal(id){
+  ownMeals = ownMeals.filter(m=>m.id!==id);
+  saveOwnMeals(ownMeals);
+  renderOwnList();
+}
+function renderOwnList(){
+  const el = document.getElementById('ownList');
+  if(!el) return;
+  if(!ownMeals.length){ el.innerHTML = ''; return; }
+  el.innerHTML = ownMeals.slice().reverse().map(m=>`<div class="entryrow">
+    <div class="info"><div class="n">${m.n}</div><div class="p">${m.p}</div></div>
+    <div class="k">${m.k} kcal</div>
+    <button class="del" onclick="deleteOwnMeal(${m.id})">✕</button>
+  </div>`).join('');
+}
+
+/* ---------- Suche & Anzeige (reine Info, nichts wird als Verlauf gespeichert) ---------- */
+let selectedMeal = null;
+let qty = 1;
+
+function searchMeals(query){
+  const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if(!tokens.length) return [];
+  return allMeals().filter(m=>{
+    const name = m.n.toLowerCase();
+    return tokens.every(t=> name.includes(t));
+  }).slice(0,8);
+}
+function onSearch(){
+  const q = document.getElementById('searchInput').value;
+  const results = searchMeals(q);
+  const el = document.getElementById('suggestList');
+  if(!q.trim()){ el.innerHTML=''; return; }
+  el.innerHTML = results.length ? `<div class="suggestlist">${results.map((m)=>
+    `<div class="suggestitem" onclick="selectMeal(${allMeals().indexOf(m)})"><div><div class="n">${m.n}${m.custom?' <span style=\"color:var(--muted);font-weight:400\">· eigene</span>':''}</div><div class="p">${m.p}</div></div><div class="k">${m.k} kcal</div></div>`
+  ).join('')}</div>` : `<div class="suggestlist"><div class="suggestempty">Keine Treffer — unten eigene Mahlzeit hinzufügen</div></div>`;
+}
+function selectMeal(idx){
+  selectedMeal = allMeals()[idx];
+  qty = 1;
+  document.getElementById('searchInput').value = selectedMeal.n;
+  document.getElementById('suggestList').innerHTML = '';
+  renderSelectedBox();
+}
+function renderSelectedBox(){
+  const el = document.getElementById('selectedBox');
+  if(!selectedMeal){ el.innerHTML=''; return; }
+  el.innerHTML = `<div class="selectedcard">
+    <div class="n">${selectedMeal.n}</div>
+    <div class="p">${selectedMeal.p} · ${selectedMeal.k} kcal</div>
+    <div class="qtyrow">
+      <button class="qtybtn" onclick="changeQty(-0.5)">−</button>
+      <div class="qtyval">${qty}× Portion</div>
+      <button class="qtybtn" onclick="changeQty(0.5)">+</button>
+    </div>
+    <div class="kcaltotal">${Math.round(selectedMeal.k*qty)} kcal</div>
+  </div>`;
+}
+function changeQty(delta){
+  qty = Math.max(0.5, Math.round((qty+delta)*10)/10);
+  renderSelectedBox();
+}
+
+/* ---------- Eigene Berechnung (kcal pro 100g × Menge) ---------- */
+function onCalc(){
+  const per100 = parseFloat(document.getElementById('calcPer100').value);
+  const grams = parseFloat(document.getElementById('calcGrams').value);
+  const el = document.getElementById('calcResult');
+  if(!per100 || !grams || per100<=0 || grams<=0){ el.textContent = '— kcal'; return; }
+  el.textContent = Math.round(per100 * grams / 100) + ' kcal';
+}
+
+/* ---------- Init ---------- */
+renderOwnList();
+</script>
+</body>
+</html>
