@@ -84,12 +84,12 @@ button{font:inherit;cursor:pointer}
 .chart-svg{width:100%;height:120px;display:block}
 .chart-empty{text-align:center;color:var(--muted);font-size:13px;padding:20px 0}
 
-.runrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.runrow{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
 .runrow:first-child{border-top:none}
-.runrow .d{flex:none;width:64px}
+.runrow .d{flex:none;width:56px}
 .runrow .d .day{font-family:var(--font-mono);font-weight:700;font-size:14px}
 .runrow .d .mo{font-size:10.5px;color:var(--muted);text-transform:uppercase}
-.runrow .m{flex:1;display:flex;gap:14px;font-size:13px}
+.runrow .m{flex:1;display:flex;gap:10px;font-size:13px;flex-wrap:wrap;min-width:140px}
 .runrow .m .v{font-family:var(--font-mono);font-weight:700}
 .runrow .m .l{font-size:10px;color:var(--muted)}
 .runrow .del{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--muted);flex:none}
@@ -115,10 +115,11 @@ button{font:inherit;cursor:pointer}
   <!-- NEUER LAUF -->
   <div class="view" data-view="new">
     <div class="panel">
+      <h3 id="formTitle" style="font-size:15px;margin-bottom:14px">Neuer Lauf</h3>
       <div class="field"><label>Datum</label><input type="date" id="inDate"></div>
       <div class="row2">
         <div class="field"><label>Kilometer</label><input type="number" id="inKm" step="0.01" min="0" placeholder="5.00" inputmode="decimal"></div>
-        <div></div>
+        <div class="field"><label>Gewicht (kg)</label><input type="number" id="inWeight" step="0.1" min="0" placeholder="70" inputmode="decimal"></div>
       </div>
       <div class="field"><label>Zeit</label>
         <div class="timegroup">
@@ -129,8 +130,10 @@ button{font:inherit;cursor:pointer}
       <div class="pacepreview">
         <div class="n" id="pacePreview">—:—</div>
         <div class="l">Pace min/km</div>
+        <div class="n" id="kcalPreview" style="font-size:16px;margin-top:8px;color:var(--green)">— kcal</div>
       </div>
-      <button class="btn primary block" onclick="saveRun()">Lauf speichern</button>
+      <button class="btn primary block" id="saveBtn" onclick="saveRun()">Lauf speichern</button>
+      <button class="btn block" id="cancelBtn" style="display:none;margin-top:8px" onclick="cancelEdit()">Abbrechen</button>
     </div>
   </div>
 
@@ -182,6 +185,37 @@ function loadRuns(){
 function saveRuns(runs){ localStorage.setItem(RUNS_KEY, JSON.stringify(runs)); }
 let runs = loadRuns();
 
+const LAST_WEIGHT_KEY = 'habitquest_runs_weight_v1';
+function loadLastWeight(){ const v = localStorage.getItem(LAST_WEIGHT_KEY); return v ? parseFloat(v) : null; }
+function saveLastWeight(w){ localStorage.setItem(LAST_WEIGHT_KEY, String(w)); }
+
+/* ---------- kcal-Schätzung (MET-Methode, interpoliert nach Pace) ---------- */
+// Referenzpunkte: Pace in Sek/km -> MET-Wert (Compendium of Physical Activities, Laufen)
+const MET_TABLE = [
+  {paceSec: 480, met: 8.3},  // 8:00 min/km
+  {paceSec: 360, met: 9.8},  // 6:00 min/km
+  {paceSec: 300, met: 11.0}, // 5:00 min/km
+  {paceSec: 240, met: 12.8}, // 4:00 min/km
+];
+function metForPace(paceSecPerKm){
+  if(paceSecPerKm >= MET_TABLE[0].paceSec) return MET_TABLE[0].met;
+  if(paceSecPerKm <= MET_TABLE[MET_TABLE.length-1].paceSec) return MET_TABLE[MET_TABLE.length-1].met;
+  for(let i=0;i<MET_TABLE.length-1;i++){
+    const a = MET_TABLE[i], b = MET_TABLE[i+1];
+    if(paceSecPerKm <= a.paceSec && paceSecPerKm >= b.paceSec){
+      const t = (a.paceSec - paceSecPerKm) / (a.paceSec - b.paceSec);
+      return a.met + t*(b.met - a.met);
+    }
+  }
+  return MET_TABLE[0].met;
+}
+function estimateKcal(weightKg, paceSecPerKm, totalSeconds){
+  if(!weightKg || weightKg<=0) return null;
+  const met = metForPace(paceSecPerKm);
+  const hours = totalSeconds/3600;
+  return Math.round(met * weightKg * hours);
+}
+
 /* ---------- Sync mit HabitQuest (Wochenquest "jogging") ---------- */
 function syncJoggingCount(dateStr, delta){
   const weekKey = getISOWeekKey(parseDate(dateStr));
@@ -221,31 +255,83 @@ function setTab(key){
   if(key==='stats') renderStats();
 }
 
-/* ---------- Neuer Lauf ---------- */
+/* ---------- Neuer Lauf / Bearbeiten ---------- */
+let editingId = null;
+
 function updatePacePreview(){
   const km = parseFloat(document.getElementById('inKm').value)||0;
   const min = parseInt(document.getElementById('inMin').value)||0;
   const sec = parseInt(document.getElementById('inSec').value)||0;
+  const weight = parseFloat(document.getElementById('inWeight').value)||0;
   const totalSec = min*60+sec;
   const pace = km>0 ? totalSec/km : 0;
   document.getElementById('pacePreview').textContent = fmtPace(pace);
+  const kcal = (km>0 && totalSec>0 && weight>0) ? estimateKcal(weight, pace, totalSec) : null;
+  document.getElementById('kcalPreview').textContent = kcal!==null ? `${kcal} kcal` : '— kcal';
 }
 function saveRun(){
   const date = document.getElementById('inDate').value || todayStr();
   const km = parseFloat(document.getElementById('inKm').value);
   const min = parseInt(document.getElementById('inMin').value)||0;
   const sec = parseInt(document.getElementById('inSec').value)||0;
+  const weight = parseFloat(document.getElementById('inWeight').value)||null;
   const totalSec = min*60+sec;
   if(!km || km<=0 || totalSec<=0){ showSyncToast('⚠️ Bitte Kilometer und Zeit angeben'); return; }
   const pace = totalSec/km;
-  runs.push({id:Date.now(), date, km, seconds:totalSec, pace});
-  saveRuns(runs);
-  syncJoggingCount(date, 1);
+  const kcal = weight ? estimateKcal(weight, pace, totalSec) : null;
+  if(weight) saveLastWeight(weight);
+
+  if(editingId){
+    const idx = runs.findIndex(r=>r.id===editingId);
+    if(idx>-1){
+      const oldDate = runs[idx].date;
+      runs[idx] = {...runs[idx], date, km, seconds:totalSec, pace, weight, kcal};
+      saveRuns(runs);
+      if(oldDate !== date){
+        syncJoggingCount(oldDate, -1);
+        syncJoggingCount(date, 1);
+      }
+      showSyncToast('✓ Lauf aktualisiert');
+    }
+    cancelEdit();
+  } else {
+    runs.push({id:Date.now(), date, km, seconds:totalSec, pace, weight, kcal});
+    saveRuns(runs);
+    syncJoggingCount(date, 1);
+    resetForm();
+  }
+  setTab('history');
+}
+function resetForm(){
   document.getElementById('inKm').value='';
   document.getElementById('inMin').value='';
   document.getElementById('inSec').value='';
+  const lastW = loadLastWeight();
+  document.getElementById('inWeight').value = lastW || '';
+  document.getElementById('inDate').value = todayStr();
   updatePacePreview();
-  setTab('history');
+}
+function editRun(id){
+  const r = runs.find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  document.getElementById('inDate').value = r.date;
+  document.getElementById('inKm').value = r.km;
+  document.getElementById('inWeight').value = r.weight || loadLastWeight() || '';
+  document.getElementById('inMin').value = Math.floor(r.seconds/60);
+  document.getElementById('inSec').value = r.seconds%60;
+  document.getElementById('formTitle').textContent = 'Lauf bearbeiten';
+  document.getElementById('saveBtn').textContent = 'Änderungen speichern';
+  document.getElementById('cancelBtn').style.display = 'block';
+  updatePacePreview();
+  setTab('new');
+}
+function cancelEdit(){
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Neuer Lauf';
+  document.getElementById('saveBtn').textContent = 'Lauf speichern';
+  document.getElementById('cancelBtn').style.display = 'none';
+  resetForm();
 }
 function deleteRun(id){
   const r = runs.find(x=>x.id===id);
@@ -268,7 +354,9 @@ function renderHistory(){
         <div><div class="v">${r.km.toFixed(2)}</div><div class="l">km</div></div>
         <div><div class="v">${fmtDuration(r.seconds)}</div><div class="l">Zeit</div></div>
         <div><div class="v">${fmtPace(r.pace)}</div><div class="l">Pace/km</div></div>
+        ${r.kcal ? `<div><div class="v" style="color:var(--green)">${r.kcal}</div><div class="l">kcal</div></div>` : ''}
       </div>
+      <button class="del" style="background:var(--card2)" onclick="editRun(${r.id})">✎</button>
       <button class="del" onclick="deleteRun(${r.id})">✕</button>
     </div>`;
   }).join('') : `<div class="empty-state"><div class="e">🏃</div>Noch keine Läufe eingetragen</div>`;
@@ -343,7 +431,9 @@ function drawChart(containerId, values, color, labelFn, dates){
 
 /* ---------- Init ---------- */
 document.getElementById('inDate').value = todayStr();
-['inKm','inMin','inSec'].forEach(id=> document.getElementById(id).addEventListener('input', updatePacePreview));
+const _lastW = loadLastWeight();
+if(_lastW) document.getElementById('inWeight').value = _lastW;
+['inKm','inMin','inSec','inWeight'].forEach(id=> document.getElementById(id).addEventListener('input', updatePacePreview));
 renderTabs();
 updatePacePreview();
 </script>
