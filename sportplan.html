@@ -75,6 +75,11 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 .phasechip b{display:block;font-size:12.5px;margin-bottom:3px}
 .phasechip span{display:block;font-size:11px;color:var(--muted)}
 .phasebadge{font-size:10.5px;color:var(--muted);margin-top:2px}
+.runblock{background:var(--soft);border:1px solid var(--accent);border-radius:12px;padding:12px 14px;margin:12px 16px 0}
+.runblock-title{font-weight:700;font-size:13px;margin-bottom:6px}
+.runblock ol{margin:0 0 8px 18px;padding:0}
+.runblock li{font-size:12.5px;margin:3px 0}
+.runblock-note{font-size:11px;color:var(--muted)}
 .linked{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#8fb4ff;background:var(--soft);padding:5px 10px;border-radius:99px;margin-left:8px}
 .synctoast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:10px 16px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90vw;text-align:center}
 .synctoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -91,7 +96,7 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 <div class="container">
 <div class="phaseoverview">
 <h2>Der Aufbau</h2>
-<p class="small">Wöchentlicher Wechsel zwischen Muskelgruppen — nie zwei Tage hintereinander dieselbe Gruppe: <b>Mo Oberkörper · Di Unterkörper · Mi Erholung · Do Core · Fr Ganzkörper · Sa Unterkörper & Po · So Ruhetag.</b> Über die Monate steigt der Schwierigkeitsgrad in 4 Phasen:</p>
+<p class="small">Wöchentlicher Wechsel zwischen Muskelgruppen — nie zwei Tage hintereinander dieselbe Gruppe, und die Beine bekommen um die Lauf-Tage herum gezielt Pausen: <b>Mo Oberkörper + Lauf · Di Ruhetag · Mi Ganzkörper · Do Core + Lauf · Fr Ruhetag · Sa Unterkörper · So Ruhetag.</b> Der harte Bein-Tag liegt bewusst auf Samstag — mit vollem Ruhetag davor und danach, und größtmöglichem Abstand zu beiden Lauf-Einheiten. Über die Monate steigt der Schwierigkeitsgrad in 4 Phasen:</p>
 <div class="phaselist">
 <div class="phasechip"><b>Phase 1 · Fundament</b><span>Woche 1–4 · leichtere Varianten · 40s/20s</span></div>
 <div class="phasechip"><b>Phase 2 · Aufbau</b><span>Woche 5–9 · Standard-Varianten · 40s/20s</span></div>
@@ -175,7 +180,7 @@ return s+"</svg>";
 
 const TOTAL_DAYS=130; // 24. Aug 2026 bis 31. Dez 2026
 
-const DAYTYPE_ORDER=["ober","unter","ruhe","core","ganz","unterpo","ruhe"];
+const DAYTYPE_ORDER=["ober","ruhe","ganz","core","ruhe","unter","ruhe"];
 const DAYTYPE_LABEL={ober:"Oberkörper",unter:"Unterkörper",ruhe:"Aktive Erholung",core:"Bauch & Core",ganz:"Ganzkörper",unterpo:"Unterkörper & Po"};
 
 const RUHE_EX=["catcow","child","stretch","deadbug","catcow","stretch","child","stretch"];
@@ -183,32 +188,42 @@ const RUHE_EX=["catcow","child","stretch","deadbug","catcow","stretch","child","
 const TIERS={
  leicht:{
   ober:["kneePush","shoulder","kneePush","plank","kneePush","shoulder","plank","stretch"],
-  unter:["squat","lunge","glute","squat","lunge","glute","plank","stretch"],
+  unter:["squat","lunge","glute","lunge","glute","plank","bicycle","stretch"],
   core:["plank","crunch","deadbug","plank","crunch","catcow","plank","stretch"],
-  ganz:["squat","kneePush","mountain","glute","plank","lunge","shoulder","stretch"],
+  ganz:["squat","kneePush","mountain","glute","plank","lunge","crunch","stretch"],
   unterpo:["lunge","glute","squat","plank","lunge","glute","stretch","catcow"]
  },
  mittel:{
   ober:["push","shoulder","kneePush","plank","push","shoulder","plank","stretch"],
-  unter:["squat","lunge","glute","pulse","squat","lunge","plank","stretch"],
+  unter:["squat","lunge","glute","pulse","lunge","plank","bicycle","stretch"],
   core:["plank","crunch","bicycle","deadbug","mountain","plank","legraise","stretch"],
-  ganz:["squat","push","mountain","glute","plank","lunge","shoulder","pulse"],
+  ganz:["squat","push","mountain","glute","plank","lunge","crunch","pulse"],
   unterpo:["lunge","glute","mountain","plank","pulse","lunge","glute","stretch"]
  },
  schwer:{
   ober:["push","diamond","shoulder","plank","pike","push","plank","stretch"],
-  unter:["squat","lunge","pulse","glute","lunge","squat","pulse","plank"],
+  unter:["squat","lunge","pulse","glute","lunge","pulse","plank","bicycle"],
   core:["plank","bicycle","legraise","mountain","sideplank","vup","plank","deadbug"],
-  ganz:["squat","push","mountain","pike","plank","lunge","diamond","pulse"],
+  ganz:["squat","push","mountain","crunch","plank","lunge","diamond","pulse"],
   unterpo:["lunge","glute","mountain","pulse","sideplank","lunge","glute","plank"]
  },
  herausforderung:{
   ober:["push","diamond","pike","plank","diamond","push","pike","plank"],
-  unter:["squat","lunge","pulse","glute","pulse","lunge","squat","plank"],
+  unter:["squat","lunge","pulse","glute","pulse","lunge","plank","bicycle"],
   core:["plank","vup","bicycle","legraise","sideplank","mountain","vup","plank"],
   ganz:["squat","push","mountain","pike","plank","lunge","diamond","vup"],
   unterpo:["lunge","glute","pulse","mountain","sideplank","lunge","pulse","glute"]
  }
+};
+
+// Eigenständig kuratierte 5er-Übungsauswahl für Lauf-Tage (Mo/Do) — bewusst
+// zusammengestellt statt der ersten 5 von 8 Übungen mechanisch abgeschnitten,
+// damit keine unnötigen Wiederholungen entstehen und ein Cooldown-Stretch bleibt.
+const RUN_DAY_TIERS={
+ leicht:{ ober:["kneePush","shoulder","plank","kneePush","stretch"], core:["plank","crunch","deadbug","catcow","stretch"] },
+ mittel:{ ober:["push","shoulder","plank","push","stretch"], core:["plank","crunch","bicycle","deadbug","stretch"] },
+ schwer:{ ober:["push","diamond","shoulder","plank","stretch"], core:["plank","bicycle","legraise","sideplank","stretch"] },
+ herausforderung:{ ober:["push","diamond","pike","plank","stretch"], core:["plank","vup","bicycle","sideplank","stretch"] }
 };
 
 const PHASES=[
@@ -220,12 +235,16 @@ const PHASES=[
 function phaseForDay(day){return PHASES.find(p=>day>=p.from&&day<=p.to)}
 
 const all=[];
+const RUN_DAY_INDICES=[0,3]; // 0=Montag, 3=Donnerstag (bezogen auf Tag 1 = Montag)
 for(let day=1;day<=TOTAL_DAYS;day++){
  const phase=phaseForDay(day);
- const dtKey=DAYTYPE_ORDER[(day-1)%7];
- const dtLabel=DAYTYPE_LABEL[dtKey];
- const exercises=dtKey==="ruhe"?RUHE_EX:TIERS[phase.tier][dtKey];
- all.push([phase.label,dtLabel,exercises,phase.work,phase.rest]);
+ const weekdayIdx=(day-1)%7;
+ const dtKey=DAYTYPE_ORDER[weekdayIdx];
+ const isRunDay=RUN_DAY_INDICES.includes(weekdayIdx);
+ const dtLabel=DAYTYPE_LABEL[dtKey]+(isRunDay?" + Lauf":"");
+ const fullEx=dtKey==="ruhe"?RUHE_EX:TIERS[phase.tier][dtKey];
+ const exercises=isRunDay?RUN_DAY_TIERS[phase.tier][dtKey]:fullEx;
+ all.push([phase.label,dtLabel,exercises,phase.work,phase.rest,isRunDay]);
 }
 
 
@@ -303,12 +322,21 @@ function render(){
  const cards=document.getElementById("cards");cards.innerHTML="";
  all.forEach((p,i)=>{
    const day=i+1;
-   const phaseLabel=p[0], dtLabel=p[1], exKeys=p[2], workSec=p[3], restSec=p[4];
+   const phaseLabel=p[0], dtLabel=p[1], exKeys=p[2], workSec=p[3], restSec=p[4], isRunDay=p[5];
    if(filter!=="all"&&filter!==phaseLabel)return;
    const done=localStorage.getItem("day"+day)==="1";
    const isOpen=openDays.has(day);
    const sw=stopwatches[day]||{running:false,elapsed:0};
    const exercises=exKeys.map((key,n)=>{const e=E[key],g=G[key];const steps=g.steps.map(x=>`<li>${x}</li>`).join("");return `<div class="exercise">${svg(e[2])}<div><h3>${n+1}. ${e[0]}</h3><p>${e[1]} · ${workSec} Sek.</p></div></div><details class="guide"><summary>So geht's</summary><ol>${steps}</ol><div class="tip"><strong>Tipp:</strong> ${g.tip}</div></details>`}).join("");
+   const runBlockHtml=isRunDay?`<div class="runblock">
+     <div class="runblock-title">🏃 Lauf-Einheit (vor der Kräftigung)</div>
+     <ol>
+       <li>3–4 Min. locker einlaufen</li>
+       <li>1 km zügiges, aber kontrolliertes Tempo</li>
+       <li>2–3 Min. locker austraben / gehen</li>
+     </ol>
+     <div class="runblock-note">Zählt nicht automatisch zur Joggen-Wochenquest — trag ihn bei Bedarf zusätzlich im Laufjournal ein.</div>
+   </div>`:"";
    const stopwatchHtml=`<div class="stopwatch">
      <div class="sw-time" id="timer-${day}">${fmtStopwatch(currentElapsedMs(day))}</div>
      <div class="sw-controls">
@@ -323,7 +351,8 @@ function render(){
        <span class="chevron">▶</span>
      </div>
      <div class="cardbody">
-       <div class="phasebadge">${phaseLabel} · ${workSec}s Arbeit / ${restSec}s Pause</div>
+       <div class="phasebadge">${phaseLabel} · ${workSec}s Arbeit / ${restSec}s Pause${isRunDay?" · ca. 15 Min. gesamt":""}</div>
+       ${runBlockHtml}
        ${stopwatchHtml}
        ${exercises}
        <label class="check"><input type="checkbox" ${done?"checked":""} onclick="event.stopPropagation()" onchange="toggleDay(${day},this.checked)"> Tag geschafft</label>
