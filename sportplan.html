@@ -76,6 +76,11 @@ button.primary{background:var(--accent);color:#fff;border-color:var(--accent);fo
 .phasechip span{display:block;font-size:11px;color:var(--muted)}
 .phasebadge{font-size:10.5px;color:var(--muted);margin-top:2px}
 .runblock{background:var(--soft);border:1px solid var(--accent);border-radius:12px;padding:12px 14px;margin:12px 16px 0}
+.weekplanner{background:var(--card2);border:1.5px solid var(--accent2);border-radius:12px;padding:14px;margin:12px 16px 0}
+.weekplanner-title{font-weight:700;font-size:13.5px;margin-bottom:4px}
+.weekplanner-sub{font-size:11.5px;color:var(--muted);margin-bottom:10px;line-height:1.4}
+.weekplanner-row{display:flex;gap:8px}
+.weekplanner-row select{flex:1;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:9px;font-size:13px}
 .runblock-title{font-weight:700;font-size:13px;margin-bottom:6px}
 .runblock ol{margin:0 0 8px 18px;padding:0}
 .runblock li{font-size:12.5px;margin:3px 0}
@@ -180,7 +185,6 @@ return s+"</svg>";
 
 const TOTAL_DAYS=130; // 24. Aug 2026 bis 31. Dez 2026
 
-const DAYTYPE_ORDER=["ober","ruhe","ganz","core","ruhe","unter","ruhe"];
 const DAYTYPE_LABEL={ober:"Oberkörper",unter:"Unterkörper",ruhe:"Aktive Erholung",core:"Bauch & Core",ganz:"Ganzkörper",unterpo:"Unterkörper & Po"};
 
 const RUHE_EX=["catcow","child","stretch","deadbug","catcow","stretch","child","stretch"];
@@ -234,18 +238,113 @@ const PHASES=[
 ];
 function phaseForDay(day){return PHASES.find(p=>day>=p.from&&day<=p.to)}
 
-const all=[];
-const RUN_DAY_INDICES=[0,3]; // 0=Montag, 3=Donnerstag (bezogen auf Tag 1 = Montag)
-for(let day=1;day<=TOTAL_DAYS;day++){
- const phase=phaseForDay(day);
- const weekdayIdx=(day-1)%7;
- const dtKey=DAYTYPE_ORDER[weekdayIdx];
- const isRunDay=RUN_DAY_INDICES.includes(weekdayIdx);
- const dtLabel=DAYTYPE_LABEL[dtKey]+(isRunDay?" + Lauf":"");
- const fullEx=dtKey==="ruhe"?RUHE_EX:TIERS[phase.tier][dtKey];
- const exercises=isRunDay?RUN_DAY_TIERS[phase.tier][dtKey]:fullEx;
- all.push([phase.label,dtLabel,exercises,phase.work,phase.rest,isRunDay]);
+/* =========================================================
+   Wochenkonfiguration — Sonntags wählbar, an welchen 2 Tagen
+   der neuen Woche gelaufen wird. Sonntag selbst ist immer
+   Pflicht-Ruhetag und nicht wählbar.
+   ========================================================= */
+const WEEK_CONFIG_KEY = "habitquest_sportplan_weekconfig_v1";
+const DEFAULT_RUN_DAYS = [0,3]; // Montag, Donnerstag (Index 0=Mo … 5=Sa)
+const WEEKDAY_NAMES = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+
+function loadWeekConfig(){ try{ return JSON.parse(localStorage.getItem(WEEK_CONFIG_KEY)) || {}; }catch(e){ return {}; } }
+function saveWeekConfig(cfg){ localStorage.setItem(WEEK_CONFIG_KEY, JSON.stringify(cfg)); }
+function getRunDaysForWeek(weekNum){
+  const cfg = loadWeekConfig();
+  return cfg[weekNum] || DEFAULT_RUN_DAYS;
 }
+function setRunDaysForWeek(weekNum, rd1, rd2){
+  const cfg = loadWeekConfig();
+  cfg[weekNum] = [rd1, rd2];
+  saveWeekConfig(cfg);
+}
+
+function circDist(a,b){ const d=Math.abs(a-b); return Math.min(d,7-d); }
+
+// Baut die Tagesarten (0=Mo…6=So) für eine Woche anhand der 2 gewählten Lauftage.
+// Sonntag = immer "ruhe". Die beiden Lauftage bekommen "ober"/"core" (kein Bein-Fokus).
+// Der harte Beintag ("unter") wird auf den Tag mit dem größten Abstand zu beiden
+// Lauftagen gelegt; die restlichen Slots bekommen "ganz" + 2× "ruhe", geprüft auf
+// die Regel "keine gleiche Gruppe an zwei aufeinanderfolgenden Tagen".
+function buildWeekDayTypes(runDay1, runDay2){
+  const types = new Array(7).fill(null);
+  types[6] = "ruhe"; // Sonntag fix
+  const sorted = [runDay1, runDay2].slice().sort((a,b)=>a-b);
+  types[sorted[0]] = "ober";
+  types[sorted[1]] = "core";
+
+  const emptySlots = [0,1,2,3,4,5].filter(i=> i!==sorted[0] && i!==sorted[1]);
+  const pool = ["unter","ganz","ruhe","ruhe"];
+
+  function permutations(arr){
+    const results = [];
+    const seen = new Set();
+    function permute(cur, rest){
+      if(!rest.length){ const key=cur.join(","); if(!seen.has(key)){ seen.add(key); results.push(cur.slice()); } return; }
+      for(let i=0;i<rest.length;i++){
+        cur.push(rest[i]);
+        permute(cur, rest.slice(0,i).concat(rest.slice(i+1)));
+        cur.pop();
+      }
+    }
+    permute([], arr);
+    return results;
+  }
+  function isValid(trial){
+    for(let i=0;i<7;i++){
+      const next = (i+1)%7;
+      // Zwei Ruhetage hintereinander sind unproblematisch (keine Muskelgruppe betroffen) —
+      // nur bei echten Trainings-Kategorien gilt "nicht zwei Tage in Folge".
+      if(trial[i]!==null && trial[next]!==null && trial[i]===trial[next] && trial[i]!=="ruhe") return false;
+    }
+    return true;
+  }
+
+  let best=null, bestScore=-1;
+  permutations(pool).forEach(perm=>{
+    const trial = types.slice();
+    emptySlots.forEach((slot,idx)=> trial[slot]=perm[idx]);
+    if(!isValid(trial)) return;
+    const unterIdx = trial.indexOf("unter");
+    const score = Math.min(circDist(unterIdx, sorted[0]), circDist(unterIdx, sorted[1]));
+    if(score > bestScore){ bestScore=score; best=trial; }
+  });
+  if(!best){ // Fallback, sollte praktisch nie eintreten
+    best = types.slice();
+    emptySlots.forEach((slot,idx)=> best[slot]=pool[idx]);
+  }
+  return best;
+}
+
+const weekTypeCache = {};
+function getWeekTypes(weekNum){
+  if(!weekTypeCache[weekNum]){
+    const [rd1,rd2] = getRunDaysForWeek(weekNum);
+    weekTypeCache[weekNum] = buildWeekDayTypes(rd1,rd2);
+  }
+  return weekTypeCache[weekNum];
+}
+
+let all=[];
+function buildAll(){
+  all = [];
+  for(const k in weekTypeCache) delete weekTypeCache[k];
+  for(let day=1;day<=TOTAL_DAYS;day++){
+    const phase=phaseForDay(day);
+    const weekNum = Math.ceil(day/7);
+    const posInWeek = (day-1)%7; // 0=Mo … 6=So
+    const [rd1,rd2] = getRunDaysForWeek(weekNum);
+    const weekTypes = getWeekTypes(weekNum);
+    const dtKey = weekTypes[posInWeek];
+    const isRunDay = (posInWeek===rd1 || posInWeek===rd2);
+    const isSunday = posInWeek===6;
+    const dtLabel = (isSunday?"Pflicht-Ruhetag":DAYTYPE_LABEL[dtKey]) + (isRunDay?" + Lauf":"");
+    const fullEx = dtKey==="ruhe" ? RUHE_EX : TIERS[phase.tier][dtKey];
+    const exercises = isRunDay ? RUN_DAY_TIERS[phase.tier][dtKey] : fullEx;
+    all.push([phase.label,dtLabel,exercises,phase.work,phase.rest,isRunDay,weekNum,posInWeek]);
+  }
+}
+buildAll();
 
 
 const G={
@@ -322,7 +421,8 @@ function render(){
  const cards=document.getElementById("cards");cards.innerHTML="";
  all.forEach((p,i)=>{
    const day=i+1;
-   const phaseLabel=p[0], dtLabel=p[1], exKeys=p[2], workSec=p[3], restSec=p[4], isRunDay=p[5];
+   const phaseLabel=p[0], dtLabel=p[1], exKeys=p[2], workSec=p[3], restSec=p[4], isRunDay=p[5], weekNum=p[6], posInWeek=p[7];
+   const isSunday=posInWeek===6;
    if(filter!=="all"&&filter!==phaseLabel)return;
    const done=localStorage.getItem("day"+day)==="1";
    const isOpen=openDays.has(day);
@@ -337,6 +437,7 @@ function render(){
      </ol>
      <div class="runblock-note">Zählt nicht automatisch zur Joggen-Wochenquest — trag ihn bei Bedarf zusätzlich im Laufjournal ein.</div>
    </div>`:"";
+   const plannerHtml=isSunday?renderWeekPlanner(weekNum+1):"";
    const stopwatchHtml=`<div class="stopwatch">
      <div class="sw-time" id="timer-${day}">${fmtStopwatch(currentElapsedMs(day))}</div>
      <div class="sw-controls">
@@ -351,6 +452,7 @@ function render(){
        <span class="chevron">▶</span>
      </div>
      <div class="cardbody">
+       ${plannerHtml}
        <div class="phasebadge">${phaseLabel} · ${workSec}s Arbeit / ${restSec}s Pause${isRunDay?" · ca. 15 Min. gesamt":""}</div>
        ${runBlockHtml}
        ${stopwatchHtml}
@@ -361,6 +463,30 @@ function render(){
  });
  updateProgress();
 }
+function renderWeekPlanner(targetWeekNum){
+  if(targetWeekNum > Math.ceil(TOTAL_DAYS/7)) return "";
+  const [rd1,rd2] = getRunDaysForWeek(targetWeekNum);
+  const isCustom = !!loadWeekConfig()[targetWeekNum];
+  const opts = (selected)=> WEEKDAY_NAMES.map((name,idx)=>`<option value="${idx}" ${idx===selected?"selected":""}>${name}</option>`).join("");
+  return `<div class="weekplanner">
+    <div class="weekplanner-title">📅 Lauftage für Woche ${targetWeekNum} wählen</div>
+    <div class="weekplanner-sub">Sonntag bleibt immer Pflicht-Ruhetag. Der Rest der Woche passt sich automatisch an.${isCustom?' <span style="color:var(--accent2)">✓ angepasst</span>':''}</div>
+    <div class="weekplanner-row">
+      <select id="wp1-${targetWeekNum}">${opts(rd1)}</select>
+      <select id="wp2-${targetWeekNum}">${opts(rd2)}</select>
+    </div>
+    <button class="btn primary" style="margin-top:8px;width:100%" onclick="event.stopPropagation();saveWeekPlan(${targetWeekNum})">Speichern</button>
+  </div>`;
+}
+function saveWeekPlan(weekNum){
+  const rd1 = parseInt(document.getElementById("wp1-"+weekNum).value);
+  const rd2 = parseInt(document.getElementById("wp2-"+weekNum).value);
+  if(rd1===rd2){ alert("Bitte zwei unterschiedliche Tage wählen."); return; }
+  setRunDaysForWeek(weekNum, rd1, rd2);
+  buildAll();
+  render();
+}
+
 const HQ_KEY='habitquest_state_v1';
 function hqTodayStr(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function syncToHabitQuest(on){
