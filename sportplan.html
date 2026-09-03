@@ -154,7 +154,11 @@ stretch:["Hüft-/Brustdehnung","Mobilität","stretch"],
 vup:["V-Ups","Fortgeschrittener Core","vup"],
 pike:["Pike Push-ups","Schultern · Brust","pike"],
 wallsit:["Wandsitz (Squat Hold)","Beine · Ausdauer","wallsit"],
-donkey:["Donkey Kicks","Po · Hüfte","donkey"]
+donkey:["Donkey Kicks","Po · Hüfte","donkey"],
+birddog:["Bird Dog","Core · Mobilität","birddog"],
+cobra:["Kobra-Dehnung","Rücken · Dehnung","cobra"],
+neckroll:["Schulter-/Nackenkreisen","Mobilität","neckroll"],
+hipcircle:["Hüftkreisen","Mobilität","hipcircle"]
 };
 
 function svg(type){
@@ -184,6 +188,10 @@ else if(type==="vup"){s+='<circle cx="80" cy="60" r="8" fill="#334155"/>'+line(8
 else if(type==="pike"){s+=head+line(105,43,80,57)+line(80,57,58,72)+line(58,72,43,82)+line(80,57,97,72)+line(97,72,111,82)}
 else if(type==="wallsit"){s+='<circle cx="82" cy="27" r="8" fill="#334155"/>'+line(82,35,82,52)+line(82,52,55,65)+line(82,52,102,65)+line(55,65,52,82)+line(102,65,105,82)+line(70,40,50,44)+line(94,40,112,44)}
 else if(type==="donkey"){s+='<circle cx="38" cy="52" r="8" fill="#334155"/>'+line(45,56,90,60)+line(45,56,42,80)+line(90,60,97,80)+line(85,58,109,42)+line(109,42,124,53)}
+else if(type==="birddog"){s+='<circle cx="92" cy="48" r="8" fill="#334155"/>'+line(85,52,50,58)+line(50,58,45,80)+line(85,52,104,33)+line(50,58,22,66)+line(22,66,8,56)}
+else if(type==="cobra"){s+='<circle cx="103" cy="44" r="8" fill="#334155"/>'+line(97,50,66,60)+line(66,60,33,65)+line(97,50,101,72)+line(101,72,97,82)+line(33,65,18,67)}
+else if(type==="neckroll"){s+=head+line(105,43,90,60)+line(90,60,90,80)+line(90,50,68,44)+line(90,50,112,56)+line(90,80,78,82)+line(90,80,102,82)}
+else if(type==="hipcircle"){s+=head+line(105,43,90,58)+line(90,58,90,78)+line(90,58,73,64)+line(90,58,107,64)+line(90,78,78,82)+line(90,78,102,82)}
 return s+"</svg>";
 }
 
@@ -191,7 +199,7 @@ const TOTAL_DAYS=130; // 24. Aug 2026 bis 31. Dez 2026
 
 const DAYTYPE_LABEL={ober:"Oberkörper",unter:"Unterkörper",ruhe:"Aktive Erholung",core:"Bauch & Core",ganz:"Ganzkörper",unterpo:"Unterkörper & Po"};
 
-const RUHE_EX=["catcow","child","stretch","deadbug","catcow","stretch","child","stretch"];
+const RUHE_EX=["catcow","child","stretch","deadbug","birddog","cobra","neckroll","hipcircle"];
 
 const TIERS={
  leicht:{
@@ -228,8 +236,8 @@ const TIERS={
 // zusammengestellt statt der ersten 5 von 8 Übungen mechanisch abgeschnitten,
 // damit keine unnötigen Wiederholungen entstehen und ein Cooldown-Stretch bleibt.
 const RUN_DAY_TIERS={
- leicht:{ ober:["kneePush","shoulder","plank","kneePush","stretch"], core:["plank","crunch","deadbug","catcow","stretch"] },
- mittel:{ ober:["push","shoulder","plank","push","stretch"], core:["plank","crunch","bicycle","deadbug","stretch"] },
+ leicht:{ ober:["kneePush","shoulder","plank","catcow","stretch"], core:["plank","crunch","deadbug","catcow","stretch"] },
+ mittel:{ ober:["push","shoulder","plank","kneePush","stretch"], core:["plank","crunch","bicycle","deadbug","stretch"] },
  schwer:{ ober:["push","diamond","shoulder","plank","stretch"], core:["plank","bicycle","legraise","sideplank","stretch"] },
  herausforderung:{ ober:["push","diamond","pike","plank","stretch"], core:["plank","vup","bicycle","sideplank","stretch"] }
 };
@@ -373,7 +381,11 @@ stretch:{steps:["Aufrecht stehen oder bequem sitzen.","Arme öffnen und Brust sa
 vup:{steps:["Auf den Rücken legen, Arme über dem Kopf.","Bauch anspannen.","Oberkörper und Beine gleichzeitig anheben und Hände Richtung Füße führen.","Kontrolliert wieder ablegen."],tip:"Schwere Übung: Erst Crunches oder Leg Raises sauber beherrschen."},
 pike:{steps:["In eine umgekehrte V-Position kommen, Hände auf der Matte.","Hüfte nach oben schieben und Rücken möglichst lang halten.","Ellbogen beugen und Kopf kontrolliert Richtung Matte senken.","Über die Schultern wieder hochdrücken."],tip:"Leichter: Knie etwas beugen oder Bewegungsweg verkürzen."},
 wallsit:{steps:["Rücken gerade gegen eine Wand lehnen (oder frei stehend halten).","In die Kniebeuge gehen, bis die Oberschenkel etwa parallel zum Boden sind.","Position ruhig halten, Gewicht in den Fersen."],tip:"Je tiefer die Position, desto intensiver — bei Bedarf höher ansetzen."},
-donkey:{steps:["Auf allen Vieren abstützen, Rücken gerade.","Ein Knie angewinkelt nach hinten oben drücken, Fußsohle zeigt zur Decke.","Kontrolliert zurückführen, ohne den Rücken durchzudrücken.","Seite wechseln."],tip:"Die Bewegung kommt aus der Hüfte, nicht aus dem unteren Rücken."}
+donkey:{steps:["Auf allen Vieren abstützen, Rücken gerade.","Ein Knie angewinkelt nach hinten oben drücken, Fußsohle zeigt zur Decke.","Kontrolliert zurückführen, ohne den Rücken durchzudrücken.","Seite wechseln."],tip:"Die Bewegung kommt aus der Hüfte, nicht aus dem unteren Rücken."},
+birddog:{steps:["Auf allen Vieren abstützen, Rücken gerade.","Einen Arm nach vorne und das gegenüberliegende Bein gleichzeitig nach hinten strecken.","Kurz halten, Rumpf ruhig lassen.","Kontrolliert zurückführen und Seite wechseln."],tip:"Hüfte bleibt gerade — nicht zur Seite kippen."},
+cobra:{steps:["Auf den Bauch legen, Hände unter den Schultern.","Oberkörper langsam aufrichten, Ellbogen leicht gebeugt lassen.","Brust öffnen, Schultern von den Ohren wegziehen.","Ruhig atmen, dann langsam ablegen."],tip:"Nur so weit hochdrücken, wie es im unteren Rücken angenehm bleibt."},
+neckroll:{steps:["Aufrecht und entspannt stehen oder sitzen.","Schultern langsam in großen Kreisen nach hinten rollen.","Nach einigen Wiederholungen die Richtung wechseln.","Kopf/Nacken locker mitbewegen, ohne zu forcieren."],tip:"Langsames Tempo löst Verspannungen besser als schnelle Bewegung."},
+hipcircle:{steps:["Aufrecht stehen, Hände locker an der Hüfte.","Das Becken in großen, ruhigen Kreisen bewegen.","Nach einigen Wiederholungen die Richtung wechseln."],tip:"Bewegung kommt aus der Hüfte, Oberkörper bleibt möglichst ruhig."}
 };
 
 let openDays = new Set(); // welche Tage aufgeklappt sind (nur zur Laufzeit, kein Speichern nötig)
