@@ -97,6 +97,13 @@ button{font:inherit;cursor:pointer}
 
 /* ---------- hero / dashboard header ---------- */
 .hero{background:linear-gradient(160deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:20px;padding:20px;margin-top:16px;position:relative;overflow:hidden}
+.avatarwrap{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;position:relative}
+.avatarbox{width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,var(--blue-soft),transparent 70%);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.avatarbox img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.avatarlabel{margin-top:8px;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+.avatar-evolve{position:fixed;top:calc(90px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-10px) scale(.9);background:var(--card3);border:1px solid var(--gold);border-radius:16px;padding:14px 22px;text-align:center;z-index:101;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;transition:.35s}
+.avatar-evolve.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+.avatar-evolve b{font-family:var(--font-display);font-size:15px;color:var(--gold);display:block}
 .hero:before{content:"";position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(59,124,246,.25),transparent 70%)}
 .hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;position:relative}
 .hero-date{color:var(--muted);font-size:13px;font-weight:600;text-transform:capitalize}
@@ -352,6 +359,10 @@ html[data-theme="pink"] .toggle.done{color:#08281a}
   <!-- HEUTE -->
   <div class="view active" data-view="today">
     <div class="hero">
+      <div class="avatarwrap">
+        <div class="avatarbox" id="avatarBox"></div>
+        <div class="avatarlabel" id="avatarLabel">Baby-Kätzchen</div>
+      </div>
       <div class="hero-top">
         <div>
           <div class="hero-date" id="todayDate">—</div>
@@ -544,6 +555,42 @@ html[data-theme="pink"] .toggle.done{color:#08281a}
 /* =========================================================
    HabitQuest — Datenmodell & State
    ========================================================= */
+const CAT_IMAGES = {1:"cat-level-1.png",2:"cat-level-2.png",3:"cat-level-3.png",4:"cat-level-4.png",5:"cat-level-5.png"};
+const CAT_LABELS = {1:"Level 1",2:"Level 2",3:"Level 3",4:"Level 4",5:"Level 5"};
+function avatarKeyForLevel(level){ return Math.min(Math.max(1,level), 5); }
+function renderAvatar(agg){
+  const key = avatarKeyForLevel(agg.level);
+  const box = document.getElementById('avatarBox');
+  const label = document.getElementById('avatarLabel');
+  const domKey = agg.level <= 5 ? String(key) : ('circle-'+agg.level);
+  if(box.dataset.key !== domKey){
+    box.innerHTML = (agg.level <= 5)
+      ? `<img src="${CAT_IMAGES[key]}" alt="Katzen-Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+      : `<div style="width:100%;height:100%;border-radius:50%;border:3px solid var(--blue);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--blue)">Lv${agg.level}</div>`;
+    box.dataset.key = domKey;
+  }
+  label.textContent = agg.level <= 5 ? CAT_LABELS[key] : 'Meister-Level';
+  if(state.lastSeenCatStage === undefined || state.lastSeenCatStage === null){
+    state.lastSeenCatStage = key;
+    saveState(state);
+  } else if(agg.level <= 5 && key > state.lastSeenCatStage){
+    celebrateEvolution(CAT_LABELS[key]);
+    state.lastSeenCatStage = key;
+    saveState(state);
+  } else if(agg.level > 5){
+    state.lastSeenCatStage = 5;
+  }
+}
+function celebrateEvolution(label){
+  const el = document.createElement('div');
+  el.className = 'avatar-evolve';
+  el.innerHTML = `\u{1F431} Deine Katze ist gewachsen!<b>${label}</b>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(()=> el.classList.add('show'));
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),400); }, 3000);
+}
+
+
 const STORAGE_KEY = 'habitquest_state_v1';
 const PERFECT_WEEK_BONUS = 5;
 
@@ -642,6 +689,7 @@ function loadState(){
   if(!raw.theme) raw.theme = 'dark';
   if(!raw.accent) raw.accent = 'blue';
   if(raw.lastSeenLevel === undefined) raw.lastSeenLevel = null; // null = noch nicht kalibriert (kein Konfetti beim ersten Laden nach Update)
+  if(raw.lastSeenCatStage === undefined) raw.lastSeenCatStage = null; // null = noch nicht kalibriert (keine Fehlmeldung beim ersten Laden nach Update)
   return raw;
 }
 function saveState(s){
@@ -1770,6 +1818,7 @@ function refresh(){
     saveState(state);
   }
   renderHeader(agg);
+  renderAvatar(agg);
   renderToday(agg);
   if(activeTab==='calendar') renderCalendar();
   if(activeTab==='stats') renderStats();
